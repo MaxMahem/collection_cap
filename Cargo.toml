@@ -1,0 +1,27 @@
+[package]
+name = "collection_cap"
+version = "0.1.0"
+edition = "2024"
+description = "Provides a trait for defining a fixed capacity of a collection."
+repository = "https://github.com/MaxMahem/collection_cap"
+license = "MIT OR Apache-2.0"
+authors = [ "Austin Stanley <MaxTMahem@gmail.com>" ]
+readme = "README.md"
+keywords = ["no_std", "capacity", "data-structures", "collection"]
+categories = ["data-structures", "no-std"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arrayvec = { version = "0.7.6", optional = true, default-features = false }
+fluent_result = "0.10.1"
+sealed = "0.6.0"
+size_hinter = "0.4.2"
+tap = "1.0.1"
+thiserror = { version = "2.0.18", default-features = false }
+
+[features]
+arrayvec = ["dep:arrayvec"]
+
+[dev-dependencies]
+collection_cap = { path = ".", features = ["arrayvec"] }
