@@ -1,7 +1,7 @@
 mod common;
 
 use arrayvec::ArrayVec;
-use collection_cap::err::{FitError, Overflows, Underflows, CapOverflow, CapUnderflow};
+use collection_cap::err::{CapOverflow, CapUnderflow, FitError, Overflows, Underflows};
 
 use common::consts::*;
 use common::{check_eq, panics};
@@ -25,7 +25,20 @@ mod fit_error {
             => "Invalid size hint: InvalidSizeHint");
     }
 
-    mod from_target_cap {
+    mod ensure_fits {
+        use super::*;
+
+        check_eq!(fits: FitError::ensure_fits(&FITS_ITER, CAP, CAP) => Ok(()));
+        check_eq!(overflow: FitError::ensure_fits(&OVER_ITER, CAP, CAP) 
+            => Err(FitError::Overflows(CAP_OVERFLOW)));
+        check_eq!(underflow: FitError::ensure_fits(&UNDER_ITER, CAP, CAP) 
+            => Err(FitError::Underflows(CAP_UNDERFLOW)));
+
+        panics!(bad_iter: FitError::ensure_fits(&INVALID_ITERATOR, CAP, CAP) 
+            => "Invalid size hint: InvalidSizeHint");
+    }
+
+    mod from_cap {
         use collection_cap::err::CapError;
 
         use super::*;
@@ -42,6 +55,8 @@ mod overflows {
 
     check_eq!(new: Overflows::new(CAP + 1, CAP) => CAP_OVERFLOW);
     panics!(panic_new: Overflows::new(CAP, CAP + 1) => "min_size must be greater than max_cap");
+    check_eq!(min_size: CAP_OVERFLOW.min_size() => CAP + 1);
+    check_eq!(max_cap: CAP_OVERFLOW.max_cap() => CAP);
 
     mod ensure_can_fit {
         use super::*;
@@ -54,7 +69,7 @@ mod overflows {
             => "Invalid size hint: InvalidSizeHint");
     }
 
-    mod ensure_can_fit_into {
+    mod ensure_can_fit_in {
         use super::*;
 
         const CAP_ARRAY_VEC: ArrayVec<i32, CAP> = ArrayVec::new_const();
@@ -67,6 +82,30 @@ mod overflows {
             => "Invalid size hint: InvalidSizeHint");
     }
 
+    mod ensure_fits {
+        use super::*;
+
+        check_eq!(fits: Overflows::ensure_fits(&FITS_ITER, CAP) => Ok(()));
+        check_eq!(overflow: Overflows::ensure_fits(&OVER_ITER, CAP) 
+            => Err(CAP_OVERFLOW));
+
+        panics!(bad_iter: Overflows::ensure_fits(&INVALID_ITERATOR, CAP) 
+            => "Invalid size hint: InvalidSizeHint");
+    }
+
+    mod ensure_fits_in {
+        use super::*;
+
+        const CAP_ARRAY_VEC: ArrayVec<i32, CAP> = ArrayVec::new_const();
+
+        check_eq!(fits: Overflows::ensure_fits_in(&FITS_ITER, &CAP_ARRAY_VEC) => Ok(()));
+        check_eq!(overflow: Overflows::ensure_fits_in(&OVER_ITER, &CAP_ARRAY_VEC) 
+            => Err(CAP_OVERFLOW));
+
+        panics!(bad_iter: Overflows::ensure_fits_in(&INVALID_ITERATOR, &CAP_ARRAY_VEC) 
+            => "Invalid size hint: InvalidSizeHint");
+    }
+
     check_eq!(from: Overflows::from(TARGET_OVERFLOW) => CAP_OVERFLOW);
 }
 
@@ -75,6 +114,8 @@ mod underflows {
 
     check_eq!(new: Underflows::new(CAP - 1, CAP) => CAP_UNDERFLOW);
     panics!(panic_new: Underflows::new(CAP, CAP - 1) => "max_size must be less than min_cap");
+    check_eq!(max_size: CAP_UNDERFLOW.max_size() => CAP - 1);
+    check_eq!(min_cap: CAP_UNDERFLOW.min_cap() => CAP);
 
     mod ensure_can_fit {
         use super::*;

@@ -1,7 +1,8 @@
 mod common;
 
+use arrayvec::ArrayVec;
 use collection_cap::IterCapExt;
-use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
+use collection_cap::err::{CapError, CapOverflow, CapUnderflow, Overflows};
 
 use common::consts::*;
 use common::{check_eq, panics};
@@ -40,5 +41,30 @@ mod ensure_fits {
         => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
     panics!(bad_iter: INVALID_ITERATOR.ensure_fits::<FixedCap>() 
+        => "Invalid size hint: InvalidSizeHint");
+}
+
+const CAP_ARRAY_VEC: ArrayVec<i32, CAP> = ArrayVec::new_const();
+const CAP_OVERFLOW: Overflows = Overflows::new(CAP + 1, CAP);
+
+mod ensure_can_fit_in {
+    use super::*;
+
+    check_eq!(fits: FITS_ITER.ensure_can_fit_in(&CAP_ARRAY_VEC) => Ok(()));
+    check_eq!(overflow: OVER_ITER.ensure_can_fit_in(&CAP_ARRAY_VEC) 
+        => Err(CAP_OVERFLOW));
+
+    panics!(bad_iter: INVALID_ITERATOR.ensure_can_fit_in(&CAP_ARRAY_VEC) 
+        => "Invalid size hint: InvalidSizeHint");
+}
+
+mod ensure_fits_in {
+    use super::*;
+
+    check_eq!(fits: FITS_ITER.ensure_fits_in(&CAP_ARRAY_VEC) => Ok(()));
+    check_eq!(overflow: OVER_ITER.ensure_fits_in(&CAP_ARRAY_VEC) 
+        => Err(CAP_OVERFLOW));
+
+    panics!(bad_iter: INVALID_ITERATOR.ensure_fits_in(&CAP_ARRAY_VEC) 
         => "Invalid size hint: InvalidSizeHint");
 }

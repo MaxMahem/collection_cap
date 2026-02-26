@@ -40,8 +40,12 @@ mod cap_error {
     }
 }
 
-mod target_overflow {
+mod cap_overflow {
     use super::*;
+
+    check_eq!(new: CapOverflow::<FixedCap>::new(CAP + 1) => TARGET_OVERFLOW);
+    panics!(panic: CapOverflow::<FixedCap>::new(CAP) => "min_size must be greater than max capacity");
+    check_eq!(min_size: TARGET_OVERFLOW.min_size() => CAP + 1);
 
     mod ensure_can_fit {
         use super::*;
@@ -66,8 +70,12 @@ mod target_overflow {
     }
 }
 
-mod target_underflow {
+mod cap_underflow {
     use super::*;
+
+    check_eq!(new: CapUnderflow::<FixedCap>::new(CAP - 1) => TARGET_UNDERFLOW);
+    panics!(panic: CapUnderflow::<FixedCap>::new(CAP) => "max_size must be less than min capacity");
+    check_eq!(max_size: TARGET_UNDERFLOW.max_size() => CAP - 1);
 
     mod ensure_can_fit {
         use super::*;
