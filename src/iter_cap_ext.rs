@@ -81,8 +81,8 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// - [`C::Error`](CapConstraint::Error) if `C`'s capacity constraints are
-    ///   not met.
+    /// - [`Overflows`] if the minimum number of elements the iterator
+    ///   can produce is greater than the remaining capacity of the collection.
     ///
     /// Note: Success on this method *does* guarantee that a properly
     /// implemented iterator will meet `C`'s constraint when iterated.
@@ -116,8 +116,8 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// - [`C::Error`](CapConstraint::Error) if `C`'s capacity constraints are
-    ///   not met.
+    /// - [`Overflows`] if the number of elements the iterator will
+    ///   produce is greater than the remaining capacity of the collection.
     ///
     /// Note: Success on this method *does* guarantee that a properly
     /// implemented iterator will meet `C`'s constraint when iterated.

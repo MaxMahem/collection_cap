@@ -26,7 +26,7 @@ impl<const MAX: usize> MaxCap for MaxCapMarker<MAX> {
 
 /// A marker for both a minimum and maximum capacity constraint.
 ///
-/// If `MIN == MAX`, then consider using [`ExactSizeMarker`] instead.
+/// If `MIN == MAX`, then consider using [`ExactSize`] instead.
 ///
 /// # Type Parameters
 ///

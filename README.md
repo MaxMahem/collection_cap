@@ -1,4 +1,4 @@
-# collection_cap
+# `collection_cap`
 
 [![Build](https://github.com/MaxMahem/collection_cap/actions/workflows/build.yml/badge.svg)](https://github.com/MaxMahem/collection_cap/actions/workflows/build.yml)
 [![Docs](https://github.com/MaxMahem/collection_cap/actions/workflows/docs.yml/badge.svg)](https://MaxMahem.github.io/collection_cap/collection_cap/index.html)
@@ -59,16 +59,16 @@ assert_eq!(ten_element_vec.remaining_capacity(), 5);
 (0..6).ensure_fits_in(&ten_element_vec).expect_err("6 more elements should not fit");
 ```
 
-### Capacity Compatability
+### Capacity Compatibility
 
-Note: that for non-exact size iterators, these error types can only gurantee that an iterator theoretically *can* fit in the given capacity. They do not gurantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. Failure however still gurantees that an iterator can not fit in the given capacity.
+Note: that for non-exact size iterators, these error types can only guarantee that an iterator theoretically *can* fit in the given capacity. They do not guarantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. Failure however still guarantees that an iterator can not fit in the given capacity.
 
 ```rust
 use collection_cap::IterCapExt;
 
 let infinite_iter = std::iter::repeat(0).filter(|_| true);
 assert_eq!(infinite_iter.size_hint(), (0, None), 
-    "A filtered repeat iterator can produce between 0 and infinit elements"); 
+    "A filtered repeat iterator can produce between 0 and infinite elements"); 
 
 infinite_iter.ensure_can_fit::<[i32; 10]>()
     .expect("Since the iterator can produce 10 elements, it is compatible");
