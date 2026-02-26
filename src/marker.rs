@@ -1,4 +1,7 @@
-use crate::{MaxCap, MinCap};
+use crate::{
+    CapConstraint, MaxCap, MinCap,
+    err::{CapError, CapOverflow, CapUnderflow},
+};
 
 /// A marker for a minimum capacity constraint.
 ///
@@ -12,6 +15,14 @@ impl<const MIN: usize> MinCap for MinCapMarker<MIN> {
     const MIN_CAP: usize = MIN;
 }
 
+impl<const MIN: usize> CapConstraint for MinCapMarker<MIN> {
+    type Error = CapUnderflow<Self>;
+
+    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapUnderflow::ensure_can_fit(iter)
+    }
+}
+
 /// A marker for a maximum capacity constraint.
 ///
 /// # Type Parameters
@@ -22,6 +33,14 @@ pub struct MaxCapMarker<const MAX: usize> {}
 
 impl<const MAX: usize> MaxCap for MaxCapMarker<MAX> {
     const MAX_CAP: usize = MAX;
+}
+
+impl<const MAX: usize> CapConstraint for MaxCapMarker<MAX> {
+    type Error = CapOverflow<Self>;
+
+    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapOverflow::ensure_can_fit(iter)
+    }
 }
 
 /// A marker for both a minimum and maximum capacity constraint.
@@ -43,6 +62,14 @@ impl<const MIN: usize, const MAX: usize> MaxCap for MinMaxCap<MIN, MAX> {
     const MAX_CAP: usize = MAX;
 }
 
+impl<const MIN: usize, const MAX: usize> CapConstraint for MinMaxCap<MIN, MAX> {
+    type Error = CapError<Self>;
+
+    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapError::ensure_can_fit(iter)
+    }
+}
+
 /// A marker for an exact size constraint, where `MIN == MAX`.
 ///
 /// # Type Parameters
@@ -57,4 +84,12 @@ impl<const SIZE: usize> MinCap for ExactSize<SIZE> {
 
 impl<const SIZE: usize> MaxCap for ExactSize<SIZE> {
     const MAX_CAP: usize = SIZE;
+}
+
+impl<const SIZE: usize> CapConstraint for ExactSize<SIZE> {
+    type Error = CapError<Self>;
+
+    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapError::ensure_can_fit(iter)
+    }
 }
