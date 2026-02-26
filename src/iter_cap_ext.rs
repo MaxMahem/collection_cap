@@ -1,4 +1,4 @@
-use crate::{CapConstraint, RemainingCap, err::CapOverflow};
+use crate::{CapConstraint, RemainingCap, err::Overflows};
 
 /// An extension trait for `Iterator` to check if the iterator can fit within
 /// target capacity constraints.
@@ -26,7 +26,7 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{IterCapExt, TargetCapError, TargetOverflow, TargetUnderflow};
+    /// # use collection_cap::IterCapExt;
     /// (0..10).ensure_can_fit::<[i32; 10]>().expect("Fits MIN & MAX");
     /// (0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
     /// (0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
@@ -60,10 +60,10 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{IterCapExt, TargetCapError, TargetOverflow, TargetUnderflow};
-    /// (0..10).ensure_can_fit::<[i32; 10]>().expect("Fits MIN & MAX");
-    /// (0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
-    /// (0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
+    /// # use collection_cap::IterCapExt;
+    /// (0..10).ensure_fits::<[i32; 10]>().expect("Fits MIN & MAX");
+    /// (0..11).ensure_fits::<[i32; 10]>().expect_err("Should overflow");
+    /// (0..9).ensure_fits::<[i32; 10]>().expect_err("Should underflow");
     /// ```
     fn ensure_fits<C>(&self) -> Result<(), C::Error>
     where
@@ -94,17 +94,18 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{IterCapExt, TargetCapError, TargetOverflow, TargetUnderflow};
-    /// (0..10).ensure_can_fit::<[i32; 10]>().expect("Fits MIN & MAX");
-    /// (0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
-    /// (0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
+    /// # use collection_cap::IterCapExt;
+    /// # use arrayvec::ArrayVec;
+    /// let vec: ArrayVec<i32, 10> = ArrayVec::new();
+    /// (0..10).ensure_can_fit_in(&vec).expect("Fits");
+    /// (0..11).ensure_can_fit_in(&vec).expect_err("Should overflow");
     /// ```
-    fn ensure_can_fit_in<C>(&self, collection: &C) -> Result<(), CapOverflow>
+    fn ensure_can_fit_in<C>(&self, collection: &C) -> Result<(), Overflows>
     where
         Self: Iterator,
         C: RemainingCap + ?Sized,
     {
-        CapOverflow::ensure_can_fit_in(self, collection)
+        Overflows::ensure_can_fit_in(self, collection)
     }
 
     /// Ensures that this iterator can fit a capacity constraint `C`.
@@ -128,17 +129,18 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{IterCapExt, TargetCapError, TargetOverflow, TargetUnderflow};
-    /// (0..10).ensure_can_fit::<[i32; 10]>().expect("Fits MIN & MAX");
-    /// (0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
-    /// (0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
+    /// # use collection_cap::IterCapExt;
+    /// # use arrayvec::ArrayVec;
+    /// let vec: ArrayVec<i32, 10> = ArrayVec::new();
+    /// (0..10).ensure_fits_in(&vec).expect("Fits");
+    /// (0..11).ensure_fits_in(&vec).expect_err("Should overflow");
     /// ```
-    fn ensure_fits_in<C>(&self, collection: &C) -> Result<(), CapOverflow>
+    fn ensure_fits_in<C>(&self, collection: &C) -> Result<(), Overflows>
     where
         Self: ExactSizeIterator,
         C: RemainingCap + ?Sized,
     {
-        CapOverflow::ensure_fits_in(self, collection)
+        Overflows::ensure_fits_in(self, collection)
     }
 }
 

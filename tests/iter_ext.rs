@@ -1,23 +1,24 @@
 mod common;
 
-use collection_cap::err::{IterCapExt, TargetCapError, TargetOverflow, TargetUnderflow};
+use collection_cap::IterCapExt;
+use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
 
 use common::consts::*;
 use common::{check_eq, panics};
 
 type FixedCap = [i32; CAP];
 
-const TARGET_OVERFLOW: TargetOverflow<FixedCap> = TargetOverflow::new(CAP + 1);
-const TARGET_UNDERFLOW: TargetUnderflow<FixedCap> = TargetUnderflow::new(CAP - 1);
+const TARGET_OVERFLOW: CapOverflow<FixedCap> = CapOverflow::new(CAP + 1);
+const TARGET_UNDERFLOW: CapUnderflow<FixedCap> = CapUnderflow::new(CAP - 1);
 
 mod ensure_can_fit {
     use super::*;
 
     check_eq!(fits: FITS_ITER.ensure_can_fit::<FixedCap>() => Ok(()));
     check_eq!(overflow: OVER_ITER.ensure_can_fit::<FixedCap>() 
-        => Err(TargetCapError::Overflow(TARGET_OVERFLOW)));
+        => Err(CapError::Overflow(TARGET_OVERFLOW)));
     check_eq!(underflow: UNDER_ITER.ensure_can_fit::<FixedCap>() 
-    => Err(TargetCapError::Underflow(TARGET_UNDERFLOW)));
+    => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
     panics!(bad_iter: INVALID_ITERATOR.ensure_can_fit::<FixedCap>() 
     => "Invalid size hint: InvalidSizeHint");
@@ -34,9 +35,9 @@ mod ensure_fits {
 
     check_eq!(fits: FITS_ITER.ensure_fits::<FixedCap>() => Ok(()));
     check_eq!(overflow: OVER_ITER.ensure_fits::<FixedCap>() 
-        => Err(TargetCapError::Overflow(TARGET_OVERFLOW)));
+        => Err(CapError::Overflow(TARGET_OVERFLOW)));
     check_eq!(underflow: UNDER_ITER.ensure_fits::<FixedCap>() 
-        => Err(TargetCapError::Underflow(TARGET_UNDERFLOW)));
+        => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
     panics!(bad_iter: INVALID_ITERATOR.ensure_fits::<FixedCap>() 
         => "Invalid size hint: InvalidSizeHint");

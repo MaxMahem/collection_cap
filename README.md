@@ -15,71 +15,68 @@ This crate is `no_std` compatible and contains no `unsafe` code.
 - **`MinCap`**: Defines a minimum capacity constraint.
 - **`MaxCap`**: Defines a maximum capacity constraint.
 - **`RemainingCap`**: Allows a collection to report its remaining capacity.
+- **`CapConstraint`**: A trait for types that have a capacity constraint, and can be used to validate that an iterator can fit the capacity constraint.
 
 Implementations are provided for `Array` by default. See the [features](#features) section for more conditional enabled implementations.
 
-## Capacity Markers
-
-In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator can produce a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize`.
-
 ## Capacity Errors
 
-### `CapError`, `CapOverflow`, `CapUnderflow`
+### `CapError<C>`, `CapOverflow<C>`, `CapUnderflow<C>`
 
-These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint`. This is particularly useful for pre-validating operations before they attempt to fill a fixed-capacity collection. They use dynamic `usize` bounds at runtime.
+These validate that an iterator's bounds can satisfy the static `C::MIN_CAP` and `C::MAX_CAP` constraints of a specific collection `C`.
 
-#### Example: `ArrayVec` and `RemainingCap`
-
-For types that implement `RemainingCap`, like `ArrayVec`, `CapOverflow` can be used to validate if an iterator will fit into the remaining capacity of the collection:
+All implementations from this crate also implement `CapConstraint` returning one of these error types, allowing them to be used via the iterator extension trait `IterCapExt`.
 
 ```rust
-use collection_cap::err::CapOverflow;
+use collection_cap::IterCapExt;
+
+(0..10).ensure_can_fit::<[i32; 10]>().expect("Should fit");
+(0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
+(0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
+```
+
+```rust
+use arrayvec::ArrayVec;
+use collection_cap::IterCapExt;
+
+let mut vec = ArrayVec::<i32, 10>::new();
+(0..10).ensure_can_fit::<ArrayVec<i32, 10>>().expect("Should fit");
+(0..11).ensure_can_fit::<ArrayVec<i32, 10>>().expect_err("Should overflow");
+```
+
+### `FitError`, `Overflows`, `Underflows`
+
+These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint` based on a runtime capacity constraint. This is particularly useful for validating that an iterator can fit into the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
+
+```rust
+use collection_cap::IterCapExt;
 use arrayvec::ArrayVec;
 
 let mut ten_element_vec: ArrayVec<i32, 10> = (0..5).collect();
 assert_eq!(ten_element_vec.remaining_capacity(), 5);
 
-CapOverflow::ensure_can_fit_in(&(0..3), &ten_element_vec)
-    .expect("3 more elements should fit");
-
-let err = CapOverflow::ensure_can_fit_in(&(0..6), &ten_element_vec)
-    .expect_err("6 more elements should not fit");
-assert_eq!(err.min_size(), 6);
-assert_eq!(err.max_cap(), 5);
-```
-
-### `TargetCapError<C>`, `TargetOverflow<C>`, `TargetUnderflow<C>`
-
-These are strongly-typed errors that validate bounds using the static `C::MIN_CAP` and `C::MAX_CAP` constraints of a specific collection `C`. They implement `From` for easy conversion into their corresponding dynamic error types.
-
-#### Example: `Array` capacity validation
-
-An array has a `MinCap` and `MaxCap` of `SIZE`:
-
-```rust
-use collection_cap::err::TargetCapError;
-
-TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..10)).expect("Must fit");
-TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..9)).expect_err("Should underflow");
-TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..11)).expect_err("Should overflow");
+(0..3).ensure_fits_in(&ten_element_vec).expect("3 more elements should fit");
+(0..6).ensure_fits_in(&ten_element_vec).expect_err("6 more elements should not fit");
 ```
 
 ### Capacity Compatability
 
-Note: these capacity validations only gurantee that an iterator theoretically *can* fit in the given capacity. They do not guarantee that an iterator will actually fit in the given capacity. They only guarantee that an iterator's `size_hint` does not declare that it will *not* fit in the given capacity.
-
-#### Example: Non-fitting iterator
+Note: that for non-exact size iterators, these error types can only gurantee that an iterator theoretically *can* fit in the given capacity. They do not gurantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. Failure however still gurantees that an iterator can not fit in the given capacity.
 
 ```rust
-use collection_cap::err::TargetCapError;
+use collection_cap::IterCapExt;
 
 let infinite_iter = std::iter::repeat(0).filter(|_| true);
 assert_eq!(infinite_iter.size_hint(), (0, None), 
-    "An infinite filtered iterator can produce between 0 and infinit elements"); 
+    "A filtered repeat iterator can produce between 0 and infinit elements"); 
 
-TargetCapError::<[i32; 10]>::ensure_can_fit(&infinite_iter)
+infinite_iter.ensure_can_fit::<[i32; 10]>()
     .expect("Since the iterator can produce 10 elements, it is compatible");
 ```
+
+## Capacity Markers
+
+In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator can produce a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize`.
 
 ## Installation
 
@@ -87,4 +84,4 @@ It's on crates.io: [collection_cap](https://crates.io/crates/collection_cap)
 
 ### Features
 
-- `arrayvec`: Implements `MaxCap` for `ArrayVec`.
+- `arrayvec`: Implements `MaxCap` and `RemainingCap` for `ArrayVec`.

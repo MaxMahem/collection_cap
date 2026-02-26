@@ -11,22 +11,22 @@ const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
 /// Represents an error that occurs when a capacity constraint is violated for a
 /// specific collection type `C`.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
-pub enum TargetCapError<C: MinCap + MaxCap + ?Sized> {
+pub enum CapError<C: MinCap + MaxCap + ?Sized> {
     /// The minimum number of elements the iterator will produce is greater
     /// than the maximum number of elements that the capacity allows.
     #[error(transparent)]
-    Overflow(#[from] TargetOverflow<C>),
+    Overflow(#[from] CapOverflow<C>),
 
     /// The maximum number of elements the iterator will produce is less than
     /// the minimum number of elements the capacity requires.
     #[error(transparent)]
-    Underflow(#[from] TargetUnderflow<C>),
+    Underflow(#[from] CapUnderflow<C>),
 }
 
-impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
+impl<C: MinCap + MaxCap + ?Sized> CapError<C> {
     fn ensure_hint_can_fit(hint: SizeHint) -> Result<(), Self> {
-        TargetUnderflow::ensure_hint_can_fit(hint).map_err(TargetCapError::Underflow)?;
-        TargetOverflow::ensure_hint_can_fit(hint).map_err(TargetCapError::Overflow)
+        CapUnderflow::ensure_hint_can_fit(hint).map_err(CapError::Underflow)?;
+        CapOverflow::ensure_hint_can_fit(hint).map_err(CapError::Overflow)
     }
 
     /// Ensures that `iter` can produce enough elements to satisfy the
@@ -39,9 +39,9 @@ impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetCapError::Underflow`] if the max number of elements `iter`
+    /// - [`CapError::Underflow`] if the max number of elements `iter`
     ///   can produce is less than the [min](MinCap::MIN_CAP) capacity of `C`.
-    /// - [`TargetCapError::Overflow`] if the min number of elements `iter`
+    /// - [`CapError::Overflow`] if the min number of elements `iter`
     ///   can produce is greater than the [max](MaxCap::MAX_CAP) capacity of `C`.
     ///
     /// Note: Success on this method does not necessarily ensure that `iter`
@@ -56,16 +56,16 @@ impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{TargetCapError, TargetOverflow, TargetUnderflow};
-    /// TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..10)).expect("Should fit");
+    /// # use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
+    /// CapError::<[i32; 10]>::ensure_can_fit(&(0..10)).expect("Should fit");
     ///
-    /// let err = TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..25))
+    /// let err = CapError::<[i32; 10]>::ensure_can_fit(&(0..25))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, TargetCapError::Overflow(TargetOverflow::new(25)));
+    /// assert_eq!(err, CapError::Overflow(CapOverflow::new(25)));
     ///
-    /// let err = TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..0))
+    /// let err = CapError::<[i32; 10]>::ensure_can_fit(&(0..0))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, TargetCapError::Underflow(TargetUnderflow::new(0)));
+    /// assert_eq!(err, CapError::Underflow(CapUnderflow::new(0)));
     /// ```
     pub fn ensure_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
         iter.size_hint() //
@@ -84,9 +84,9 @@ impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetCapError::Underflow`] if the max number of elements `iter`
+    /// - [`CapError::Underflow`] if the max number of elements `iter`
     ///   can produce is less than the [min](MinCap::MIN_CAP) capacity of `C`.
-    /// - [`TargetCapError::Overflow`] if the min number of elements `iter`
+    /// - [`CapError::Overflow`] if the min number of elements `iter`
     ///   can produce is greater than the [max](MaxCap::MAX_CAP) capacity of `C`.
     ///
     /// Note: Success on this method *does* guarantee that a properly
@@ -99,16 +99,16 @@ impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::{TargetCapError, TargetOverflow, TargetUnderflow};
-    /// TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..10)).expect("Should fit");
+    /// # use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
+    /// CapError::<[i32; 10]>::ensure_can_fit(&(0..10)).expect("Should fit");
     ///
-    /// let err = TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..25))
+    /// let err = CapError::<[i32; 10]>::ensure_can_fit(&(0..25))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, TargetCapError::Overflow(TargetOverflow::new(25)));
+    /// assert_eq!(err, CapError::Overflow(CapOverflow::new(25)));
     ///
-    /// let err = TargetCapError::<[i32; 10]>::ensure_can_fit(&(0..0))
+    /// let err = CapError::<[i32; 10]>::ensure_can_fit(&(0..0))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, TargetCapError::Underflow(TargetUnderflow::new(0)));
+    /// assert_eq!(err, CapError::Underflow(CapUnderflow::new(0)));
     /// ```
     pub fn ensure_fits<I>(iter: &I) -> Result<(), Self>
     where
@@ -122,18 +122,18 @@ impl<C: MinCap + MaxCap + ?Sized> TargetCapError<C> {
 /// specific collection `C` can hold.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("Capacity overflow: min iterator size {min_size} > max capacity {}", C::MAX_CAP)]
-pub struct TargetOverflow<C: MaxCap + ?Sized> {
+pub struct CapOverflow<C: MaxCap + ?Sized> {
     /// The minimum number of elements produced.
     min_size: usize,
     /// Marker for the collection type.
     _marker: PhantomData<C>,
 }
 
-impl<C: MaxCap + ?Sized> TargetOverflow<C> {
+impl<C: MaxCap + ?Sized> CapOverflow<C> {
     /// The maximum capacity of the target collection.
     pub const MAX_CAP: usize = C::MAX_CAP;
 
-    /// Creates a new [`TargetOverflow`] with the given minimum size.
+    /// Creates a new [`CapOverflow`] with the given minimum size.
     ///
     /// # Arguments
     ///
@@ -147,8 +147,8 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetOverflow;
-    /// let err = TargetOverflow::<[i32; 10]>::new(25);
+    /// # use collection_cap::err::CapOverflow;
+    /// let err = CapOverflow::<[i32; 10]>::new(25);
     /// assert_eq!(err.min_size(), 25);
     /// ```
     #[must_use]
@@ -181,7 +181,7 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetOverflow`] if the minimum number of elements the iterator
+    /// - [`CapOverflow`] if the minimum number of elements the iterator
     ///   can produce is greater than the maximum capacity of the collection.
     ///
     /// Note: Success on this method does not guarantee that `iter` will not
@@ -195,12 +195,12 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetOverflow;
-    /// TargetOverflow::<[i32; 20]>::ensure_can_fit(&(0..15)).expect("Should fit");
+    /// # use collection_cap::err::CapOverflow;
+    /// CapOverflow::<[i32; 20]>::ensure_can_fit(&(0..15)).expect("Should fit");
     ///
-    /// let err = TargetOverflow::<[i32; 20]>::ensure_can_fit(&(0..25))
+    /// let err = CapOverflow::<[i32; 20]>::ensure_can_fit(&(0..25))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, TargetOverflow::new(25));
+    /// assert_eq!(err, CapOverflow::new(25));
     /// ```
     pub fn ensure_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
         iter.size_hint() //
@@ -218,7 +218,7 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetOverflow`] if the number of elements the iterator will
+    /// - [`CapOverflow`] if the number of elements the iterator will
     ///   produce is greater than the maximum capacity of the collection.
     ///
     /// Note: Success on this method *does* guarantee that a properly
@@ -231,12 +231,12 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetOverflow;
-    /// TargetOverflow::<[i32; 20]>::ensure_fits(&(0..15)).expect("Should fit");
+    /// # use collection_cap::err::CapOverflow;
+    /// CapOverflow::<[i32; 20]>::ensure_fits(&(0..15)).expect("Should fit");
     ///
-    /// let err = TargetOverflow::<[i32; 20]>::ensure_fits(&(0..25))
+    /// let err = CapOverflow::<[i32; 20]>::ensure_fits(&(0..25))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, TargetOverflow::new(25));
+    /// assert_eq!(err, CapOverflow::new(25));
     /// ```
     pub fn ensure_fits<I>(iter: &I) -> Result<(), Self>
     where
@@ -250,18 +250,18 @@ impl<C: MaxCap + ?Sized> TargetOverflow<C> {
 /// specific collection `C` requires.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("Capacity underflow: max iterator size {max_size} < min capacity {}", C::MIN_CAP)]
-pub struct TargetUnderflow<C: MinCap + ?Sized> {
+pub struct CapUnderflow<C: MinCap + ?Sized> {
     /// The maximum number of elements produced.
     max_size: usize,
     /// Marker for the collection type.
     _marker: PhantomData<C>,
 }
 
-impl<C: MinCap + ?Sized> TargetUnderflow<C> {
+impl<C: MinCap + ?Sized> CapUnderflow<C> {
     /// The minimum capacity of the target collection.
     pub const MIN_CAP: usize = C::MIN_CAP;
 
-    /// Creates a new [`TargetUnderflow`] with the given maximum size.
+    /// Creates a new [`CapUnderflow`] with the given maximum size.
     ///
     /// # Arguments
     ///
@@ -275,8 +275,8 @@ impl<C: MinCap + ?Sized> TargetUnderflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetUnderflow;
-    /// let err = TargetUnderflow::<[i32; 10]>::new(5);
+    /// # use collection_cap::err::CapUnderflow;
+    /// let err = CapUnderflow::<[i32; 10]>::new(5);
     /// assert_eq!(err.max_size(), 5);
     /// ```
     #[must_use]
@@ -307,7 +307,7 @@ impl<C: MinCap + ?Sized> TargetUnderflow<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetUnderflow`] if the maximum number of elements `iter` can produce
+    /// - [`CapUnderflow`] if the maximum number of elements `iter` can produce
     ///   is less than the minimum capacity of `C`.
     ///
     /// Note: Success on this function does not guarantee that `iter` will
@@ -320,12 +320,12 @@ impl<C: MinCap + ?Sized> TargetUnderflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetUnderflow;
-    /// TargetUnderflow::<[i32; 15]>::ensure_can_fit(&(0..15)).expect("Should fit");
+    /// # use collection_cap::err::CapUnderflow;
+    /// CapUnderflow::<[i32; 15]>::ensure_can_fit(&(0..15)).expect("Should fit");
     ///
-    /// let err = TargetUnderflow::<[i32; 20]>::ensure_can_fit(&(0..5))
+    /// let err = CapUnderflow::<[i32; 20]>::ensure_can_fit(&(0..5))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, TargetUnderflow::new(5));
+    /// assert_eq!(err, CapUnderflow::new(5));
     /// ```
     pub fn ensure_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
         iter.size_hint() //
@@ -343,7 +343,7 @@ impl<C: MinCap + ?Sized> TargetUnderflow<C> {
     ///
     /// # Errors
     ///
-    /// - [`TargetUnderflow`] if the number of elements `iter` will produce
+    /// - [`CapUnderflow`] if the number of elements `iter` will produce
     ///   is less than the minimum capacity of `C`.
     ///
     /// Note: Success on this method *does* guarantee that a properly
@@ -356,12 +356,12 @@ impl<C: MinCap + ?Sized> TargetUnderflow<C> {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::err::TargetUnderflow;
-    /// TargetUnderflow::<[i32; 15]>::ensure_fits(&(0..15)).expect("Should fit");
+    /// # use collection_cap::err::CapUnderflow;
+    /// CapUnderflow::<[i32; 15]>::ensure_fits(&(0..15)).expect("Should fit");
     ///
-    /// let err = TargetUnderflow::<[i32; 20]>::ensure_fits(&(0..5))
+    /// let err = CapUnderflow::<[i32; 20]>::ensure_fits(&(0..5))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, TargetUnderflow::new(5));
+    /// assert_eq!(err, CapUnderflow::new(5));
     /// ```
     pub fn ensure_fits<I: ExactSizeIterator + ?Sized>(iter: &I) -> Result<(), Self> {
         Self::ensure_can_fit(iter)

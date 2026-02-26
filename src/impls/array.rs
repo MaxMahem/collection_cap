@@ -1,4 +1,4 @@
-use crate::err::TargetCapError;
+use crate::err::CapError;
 use crate::{CapConstraint, MaxCap, MinCap};
 
 impl<const N: usize, T> MaxCap for [T; N] {
@@ -12,9 +12,9 @@ impl<const N: usize, T> MinCap for [T; N] {
 }
 
 impl<const N: usize, T> CapConstraint for [T; N] {
-    type Error = TargetCapError<Self>;
+    type Error = CapError<Self>;
 
     fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
-        TargetCapError::ensure_can_fit(iter)
+        CapError::ensure_can_fit(iter)
     }
 }

@@ -7,10 +7,12 @@
 
 mod capacity;
 mod impls;
+mod iter_cap_ext;
 mod marker;
 
 /// Capacity validation errors.
 pub mod err;
 
 pub use capacity::*;
+pub use iter_cap_ext::*;
 pub use marker::*;
