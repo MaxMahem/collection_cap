@@ -68,3 +68,31 @@ mod ensure_fits_in {
     panics!(bad_iter: INVALID_ITERATOR.ensure_fits_in(&CAP_ARRAY_VEC) 
         => "Invalid size hint: InvalidSizeHint");
 }
+
+const CAP_RANGE: std::ops::Range<usize> = CAP..CAP + 1;
+
+mod ensure_can_fit_within {
+    use super::*;
+
+    check_eq!(fits: FITS_ITER.ensure_can_fit_within(CAP_RANGE) => Ok(()));
+    check_eq!(overflow: OVER_ITER.ensure_can_fit_within(CAP_RANGE) 
+        => Err(FIT_ERROR_OVERFLOWS));
+    check_eq!(underflow: UNDER_ITER.ensure_can_fit_within(CAP_RANGE) 
+        => Err(FIT_ERROR_UNDERFLOWS));
+
+    panics!(bad_iter: INVALID_ITERATOR.ensure_can_fit_within(CAP_RANGE) 
+        => "Invalid size hint: InvalidSizeHint");
+}
+
+mod ensure_fits_within {
+    use super::*;
+
+    check_eq!(fits: FITS_ITER.ensure_fits_within(CAP_RANGE) => Ok(()));
+    check_eq!(overflow: OVER_ITER.ensure_fits_within(CAP_RANGE) 
+        => Err(FIT_ERROR_OVERFLOWS));
+    check_eq!(underflow: UNDER_ITER.ensure_fits_within(CAP_RANGE) 
+        => Err(FIT_ERROR_UNDERFLOWS));
+
+    panics!(bad_iter: INVALID_ITERATOR.ensure_fits_within(CAP_RANGE) 
+        => "Invalid size hint: InvalidSizeHint");
+}

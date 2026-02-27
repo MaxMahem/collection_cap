@@ -171,9 +171,9 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::{IterCapExt, MaxConstraint};
-    /// (0..10).ensure_can_fit_within(MaxConstraint(10)).expect("Fits");
-    /// (0..11).ensure_can_fit_within(MaxConstraint(10)).expect_err("Should overflow");
+    /// # use collection_cap::IterCapExt;
+    /// (0..10).ensure_can_fit_within(..=10).expect("Fits");
+    /// (0..11).ensure_can_fit_within(..=10).expect_err("Should overflow");
     /// ```
     fn ensure_can_fit_within<C>(&self, constraint: C) -> Result<(), C::Error>
     where
@@ -208,9 +208,9 @@ pub trait IterCapExt {
     /// # Examples
     ///
     /// ```rust
-    /// # use collection_cap::{IterCapExt, MaxConstraint};
-    /// (0..10).ensure_fits_within(MaxConstraint(10)).expect("Fits");
-    /// (0..11).ensure_fits_within(MaxConstraint(10)).expect_err("Should overflow");
+    /// # use collection_cap::IterCapExt;
+    /// (0..10).ensure_fits_within(..=10).expect("Fits");
+    /// (0..11).ensure_fits_within(..=10).expect_err("Should overflow");
     /// ```
     fn ensure_fits_within<C>(&self, constraint: C) -> Result<(), C::Error>
     where

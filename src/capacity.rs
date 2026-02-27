@@ -54,7 +54,7 @@ pub trait CapConstraint {
 /// an instance of the constraint to check against, whereas `CapConstraint`
 /// relies on type-level traits.
 pub trait ValConstraint {
-    /// The actual target error type returned if the constraint is violated.
+    /// The error type returned if the constraint is violated.
     type Error;
 
     /// Checks if the given iterator can produce an element count that fits

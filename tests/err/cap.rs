@@ -1,9 +1,7 @@
-mod common;
-
 use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
 
-use common::consts::*;
-use common::{check_eq, panics};
+use crate::common::consts::*;
+use crate::common::{check_eq, panics};
 
 type FixedCap = [i32; CAP];
 

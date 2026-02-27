@@ -1,5 +1,5 @@
-mod cap_error;
-mod fit_error;
+mod cap;
+mod fit;
 
-pub use cap_error::*;
-pub use fit_error::*;
+pub use cap::*;
+pub use fit::*;

@@ -1,10 +1,8 @@
-mod common;
-
 use arrayvec::ArrayVec;
 use collection_cap::err::{CapOverflow, CapUnderflow, FitError, Overflows, Underflows};
 
-use common::consts::*;
-use common::{check_eq, panics};
+use crate::common::consts::*;
+use crate::common::{check_eq, panics};
 
 const TARGET_OVERFLOW: CapOverflow<[i32; CAP]> = CapOverflow::new(CAP + 1);
 const TARGET_UNDERFLOW: CapUnderflow<[i32; CAP]> = CapUnderflow::new(CAP - 1);
@@ -17,9 +15,9 @@ mod fit_error {
 
         check_eq!(fits: FitError::ensure_can_fit(&FITS_ITER, CAP, CAP) => Ok(()));
         check_eq!(overflow: FitError::ensure_can_fit(&OVER_ITER, CAP, CAP) 
-            => Err(FitError::Overflows(CAP_OVERFLOW)));
+            => Err(FitError::Overflows(CAP_OVERFLOWS)));
         check_eq!(underflow: FitError::ensure_can_fit(&UNDER_ITER, CAP, CAP) 
-            => Err(FitError::Underflows(CAP_UNDERFLOW)));
+            => Err(FitError::Underflows(CAP_UNDERFLOWS)));
 
         panics!(bad_iter: FitError::ensure_can_fit(&INVALID_ITERATOR, CAP, CAP) 
             => "Invalid size hint: InvalidSizeHint");
@@ -30,9 +28,9 @@ mod fit_error {
 
         check_eq!(fits: FitError::ensure_fits(&FITS_ITER, CAP, CAP) => Ok(()));
         check_eq!(overflow: FitError::ensure_fits(&OVER_ITER, CAP, CAP) 
-            => Err(FitError::Overflows(CAP_OVERFLOW)));
+            => Err(FitError::Overflows(CAP_OVERFLOWS)));
         check_eq!(underflow: FitError::ensure_fits(&UNDER_ITER, CAP, CAP) 
-            => Err(FitError::Underflows(CAP_UNDERFLOW)));
+            => Err(FitError::Underflows(CAP_UNDERFLOWS)));
 
         panics!(bad_iter: FitError::ensure_fits(&INVALID_ITERATOR, CAP, CAP) 
             => "Invalid size hint: InvalidSizeHint");
@@ -43,27 +41,27 @@ mod fit_error {
 
         use super::*;
 
-        check_eq!(overflow: FitError::from(TARGET_OVERFLOW) => FitError::Overflows(CAP_OVERFLOW));
-        check_eq!(underflow: FitError::from(TARGET_UNDERFLOW) => FitError::Underflows(CAP_UNDERFLOW));
-        check_eq!(cap_err_overflow: FitError::from(CapError::Overflow(TARGET_OVERFLOW)) => FitError::Overflows(CAP_OVERFLOW));
-        check_eq!(cap_err_underflow: FitError::from(CapError::Underflow(TARGET_UNDERFLOW)) => FitError::Underflows(CAP_UNDERFLOW));
+        check_eq!(overflow: FitError::from(TARGET_OVERFLOW) => FitError::Overflows(CAP_OVERFLOWS));
+        check_eq!(underflow: FitError::from(TARGET_UNDERFLOW) => FitError::Underflows(CAP_UNDERFLOWS));
+        check_eq!(cap_err_overflow: FitError::from(CapError::Overflow(TARGET_OVERFLOW)) => FitError::Overflows(CAP_OVERFLOWS));
+        check_eq!(cap_err_underflow: FitError::from(CapError::Underflow(TARGET_UNDERFLOW)) => FitError::Underflows(CAP_UNDERFLOWS));
     }
 }
 
 mod overflows {
     use super::*;
 
-    check_eq!(new: Overflows::new(CAP + 1, CAP) => CAP_OVERFLOW);
+    check_eq!(new: Overflows::new(CAP + 1, CAP) => CAP_OVERFLOWS);
     panics!(panic_new: Overflows::new(CAP, CAP + 1) => "min_size must be greater than max_cap");
-    check_eq!(min_size: CAP_OVERFLOW.min_size() => CAP + 1);
-    check_eq!(max_cap: CAP_OVERFLOW.max_cap() => CAP);
+    check_eq!(min_size: CAP_OVERFLOWS.min_size() => CAP + 1);
+    check_eq!(max_cap: CAP_OVERFLOWS.max_cap() => CAP);
 
     mod ensure_can_fit {
         use super::*;
 
         check_eq!(fits: Overflows::ensure_can_fit(&FITS_ITER, CAP) => Ok(()));
         check_eq!(overflow: Overflows::ensure_can_fit(&OVER_ITER, CAP) 
-            => Err(CAP_OVERFLOW));
+            => Err(CAP_OVERFLOWS));
 
         panics!(bad_iter: Overflows::ensure_can_fit(&INVALID_ITERATOR, CAP) 
             => "Invalid size hint: InvalidSizeHint");
@@ -76,7 +74,7 @@ mod overflows {
 
         check_eq!(fits: Overflows::ensure_can_fit_in(&FITS_ITER, &CAP_ARRAY_VEC) => Ok(()));
         check_eq!(overflow: Overflows::ensure_can_fit_in(&OVER_ITER, &CAP_ARRAY_VEC) 
-            => Err(CAP_OVERFLOW));
+            => Err(CAP_OVERFLOWS));
 
         panics!(bad_iter: Overflows::ensure_can_fit_in(&INVALID_ITERATOR, &CAP_ARRAY_VEC) 
             => "Invalid size hint: InvalidSizeHint");
@@ -87,7 +85,7 @@ mod overflows {
 
         check_eq!(fits: Overflows::ensure_fits(&FITS_ITER, CAP) => Ok(()));
         check_eq!(overflow: Overflows::ensure_fits(&OVER_ITER, CAP) 
-            => Err(CAP_OVERFLOW));
+            => Err(CAP_OVERFLOWS));
 
         panics!(bad_iter: Overflows::ensure_fits(&INVALID_ITERATOR, CAP) 
             => "Invalid size hint: InvalidSizeHint");
@@ -100,29 +98,29 @@ mod overflows {
 
         check_eq!(fits: Overflows::ensure_fits_in(&FITS_ITER, &CAP_ARRAY_VEC) => Ok(()));
         check_eq!(overflow: Overflows::ensure_fits_in(&OVER_ITER, &CAP_ARRAY_VEC) 
-            => Err(CAP_OVERFLOW));
+            => Err(CAP_OVERFLOWS));
 
         panics!(bad_iter: Overflows::ensure_fits_in(&INVALID_ITERATOR, &CAP_ARRAY_VEC) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
-    check_eq!(from: Overflows::from(TARGET_OVERFLOW) => CAP_OVERFLOW);
+    check_eq!(from: Overflows::from(TARGET_OVERFLOW) => CAP_OVERFLOWS);
 }
 
 mod underflows {
     use super::*;
 
-    check_eq!(new: Underflows::new(CAP - 1, CAP) => CAP_UNDERFLOW);
+    check_eq!(new: Underflows::new(CAP - 1, CAP) => CAP_UNDERFLOWS);
     panics!(panic_new: Underflows::new(CAP, CAP - 1) => "max_size must be less than min_cap");
-    check_eq!(max_size: CAP_UNDERFLOW.max_size() => CAP - 1);
-    check_eq!(min_cap: CAP_UNDERFLOW.min_cap() => CAP);
+    check_eq!(max_size: CAP_UNDERFLOWS.max_size() => CAP - 1);
+    check_eq!(min_cap: CAP_UNDERFLOWS.min_cap() => CAP);
 
     mod ensure_can_fit {
         use super::*;
 
         check_eq!(fits: Underflows::ensure_can_fit(&FITS_ITER, CAP) => Ok(()));
         check_eq!(underflow: Underflows::ensure_can_fit(&UNDER_ITER, CAP) 
-            => Err(CAP_UNDERFLOW));
+            => Err(CAP_UNDERFLOWS));
 
         panics!(bad_iter: Underflows::ensure_can_fit(&INVALID_ITERATOR, CAP) 
             => "Invalid size hint: InvalidSizeHint");
@@ -133,8 +131,8 @@ mod underflows {
 
         check_eq!(fits: Underflows::ensure_fits(&FITS_ITER, CAP) => Ok(()));
         check_eq!(underflow: Underflows::ensure_fits(&UNDER_ITER, CAP) 
-            => Err(CAP_UNDERFLOW));
+            => Err(CAP_UNDERFLOWS));
     }
 
-    check_eq!(from: Underflows::from(TARGET_UNDERFLOW) => CAP_UNDERFLOW);
+    check_eq!(from: Underflows::from(TARGET_UNDERFLOW) => CAP_UNDERFLOWS);
 }

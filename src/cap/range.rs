@@ -62,8 +62,8 @@ impl ValConstraint for Range<usize> {
         I: Iterator + ?Sized,
     {
         match (self.start, self.end) {
-            (start, end) if start == end => panic!("capacity constraint range must not be empty"),
-            (start, end) if start > end => panic!("invalid range"),
+            (start, end) if start == end => panic!("range must not be empty"),
+            (start, end) if start > end => panic!("invalid range (start > end)"),
             (start, end) => FitError::ensure_can_fit(iter, start, end.saturating_sub(1)),
         }
     }
@@ -82,7 +82,7 @@ impl ValConstraint for RangeInclusive<usize> {
         I: Iterator + ?Sized,
     {
         match (self.start(), self.end()) {
-            (start, end) if start > end => panic!("invalid range"),
+            (start, end) if start > end => panic!("invalid range (start > end)"),
             (start, end) => FitError::ensure_can_fit(iter, *start, *end),
         }
     }

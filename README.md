@@ -60,7 +60,14 @@ assert_eq!(ten_element_vec.remaining_capacity(), 5);
 (0..6).ensure_fits_in(&ten_element_vec).expect_err("6 more elements should not fit");
 ```
 
-It is also possible to specify the constraint to check directly, for example:
+It is also possible to specify the constraint to check directly, using any type that implements `ValConstraint`. A variety of `ValConstraint` implementations are provided, including `MinCapVal`, `MaxCapVal`, `MinMaxCapVal`, and `ExactSizeVal`. In addition, `RangeTo`, `RangeToInclusive`, `RangeFrom`, `Range`, `RangeInclusive`, and `RangeFull` also implement `ValConstraint`.
+
+```rust
+use collection_cap::IterCapExt;
+
+(0..5).ensure_fits_within(..=5).expect("5 more elements should fit");
+(0..6).ensure_fits_within(..=5).expect_err("6 more elements should not fit");
+```
 
 ### Capacity Compatibility
 
