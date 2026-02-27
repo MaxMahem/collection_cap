@@ -2,6 +2,7 @@ use core::convert::Infallible;
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 use crate::ValConstraint;
+use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
 use crate::err::{FitError, Overflows, Underflows};
 
 impl ValConstraint for RangeTo<usize> {
@@ -17,9 +18,10 @@ impl ValConstraint for RangeTo<usize> {
     where
         I: Iterator + ?Sized,
     {
-        match self.end {
-            0 => panic!("capacity constraint range must not be empty"),
-            end => Overflows::ensure_can_fit(iter, end.saturating_sub(1)),
+        #[expect(clippy::option_if_let_else)]
+        match usize::checked_sub(self.end, 1) {
+            None => panic!("capacity constraint range must not be empty"),
+            Some(end) => MaxCapVal(end).check_if_can_fit(iter),
         }
     }
 }
@@ -31,7 +33,7 @@ impl ValConstraint for RangeToInclusive<usize> {
     where
         I: Iterator + ?Sized,
     {
-        Overflows::ensure_can_fit(iter, self.end)
+        MaxCapVal(self.end).check_if_can_fit(iter)
     }
 }
 
@@ -42,7 +44,7 @@ impl ValConstraint for RangeFrom<usize> {
     where
         I: Iterator + ?Sized,
     {
-        Underflows::ensure_can_fit(iter, self.start)
+        MinCapVal(self.start).check_if_can_fit(iter)
     }
 }
 
@@ -64,7 +66,7 @@ impl ValConstraint for Range<usize> {
         match (self.start, self.end) {
             (start, end) if start == end => panic!("range must not be empty"),
             (start, end) if start > end => panic!("invalid range (start > end)"),
-            (start, end) => FitError::ensure_can_fit(iter, start, end.saturating_sub(1)),
+            (start, end) => MinMaxCapVal::new(start, end.saturating_sub(1)).check_if_can_fit(iter),
         }
     }
 }
@@ -83,7 +85,7 @@ impl ValConstraint for RangeInclusive<usize> {
     {
         match (self.start(), self.end()) {
             (start, end) if start > end => panic!("invalid range (start > end)"),
-            (start, end) => FitError::ensure_can_fit(iter, *start, *end),
+            (start, end) => MinMaxCapVal::new(*start, *end).check_if_can_fit(iter),
         }
     }
 }

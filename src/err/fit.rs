@@ -1,10 +1,6 @@
-use fluent_result::bool::Then;
-use size_hinter::SizeHint;
-
+use crate::cap::MaxCapVal;
 use crate::err::{CapError, CapOverflow, CapUnderflow};
-use crate::{MaxCap, MinCap, RemainingCap};
-
-const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
+use crate::{MaxCap, MinCap, RemainingCap, ValConstraint};
 
 /// Represents an error that occurs when a capacity constraint is violated.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -21,31 +17,25 @@ pub enum FitError {
 }
 
 impl FitError {
-    fn ensure_hint_can_fit(hint: SizeHint, min_cap: usize, max_cap: usize) -> Result<(), Self> {
-        Underflows::ensure_hint_can_fit(hint, min_cap).map_err(FitError::Underflows)?;
-        Overflows::ensure_hint_can_fit(hint, max_cap).map_err(FitError::Overflows)
-    }
-
     /// Ensures that `iter` can produce enough elements to satisfy the
     /// `min_cap` but will not produce more elements than the `max_cap`.
     ///
     /// # Arguments
     ///
     /// - `iter`: The [`Iterator`] to check.
-    /// - `min_cap`: The minimum capacity required.
-    /// - `max_cap`: The maximum capacity allowed.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`FitError::Underflows`] if the max number of elements `iter`
-    ///   can produce is less than `min_cap`.
+    ///   can produce is less than the minimum required capacity.
     /// - [`FitError::Overflows`] if the min number of elements `iter`
-    ///   can produce is greater than `max_cap`.
+    ///   can produce is greater than the maximum allowed capacity.
     ///
     /// Note: Success on this method does not necessarily ensure that `iter`
     /// will actually fit. This method merely ensures that `iter` does
-    /// not declare that it will always produce more elements than `max_cap`,
-    /// or fewer elements than `min_cap`.
+    /// not declare that it will always produce more elements than allowed,
+    /// or fewer elements than required.
     ///
     /// # Panics
     ///
@@ -55,20 +45,21 @@ impl FitError {
     ///
     /// ```rust
     /// # use collection_cap::err::{FitError, Overflows, Underflows};
-    /// FitError::ensure_can_fit(&(0..10), 5, 15).expect("Should fit");
+    /// # use collection_cap::cap::MinMaxCapVal;
+    /// FitError::ensure_can_fit(&(0..10), MinMaxCapVal::new(5, 15)).expect("Should fit");
     ///
-    /// let err = FitError::ensure_can_fit(&(0..20), 5, 15).expect_err("Should overflow");
+    /// let err = FitError::ensure_can_fit(&(0..20), MinMaxCapVal::new(5, 15)).expect_err("Should overflow");
     /// assert_eq!(err, FitError::Overflows(Overflows::new(20, 15)));
     ///
-    /// let err = FitError::ensure_can_fit(&(0..3), 5, 15).expect_err("Should underflow");
+    /// let err = FitError::ensure_can_fit(&(0..3), MinMaxCapVal::new(5, 15)).expect_err("Should underflow");
     /// assert_eq!(err, FitError::Underflows(Underflows::new(3, 5)));
     /// ```
-    pub fn ensure_can_fit<I>(iter: &I, min_cap: usize, max_cap: usize) -> Result<(), Self>
+    pub fn ensure_can_fit<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: Iterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        let hint = SizeHint::try_from(iter.size_hint()).expect(INVALID_SIZE_HINT_MSG);
-        Self::ensure_hint_can_fit(hint, min_cap, max_cap)
+        constraint.check_if_can_fit(iter)
     }
 
     /// Ensures that `iter` produces exactly enough elements to satisfy the
@@ -77,15 +68,14 @@ impl FitError {
     /// # Arguments
     ///
     /// - `iter`: The [`ExactSizeIterator`] to check.
-    /// - `min_cap`: The minimum capacity required.
-    /// - `max_cap`: The maximum capacity allowed.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`FitError::Underflows`] if the number of elements `iter`
-    ///   can produce is less than `min_cap`.
+    ///   can produce is less than the minimum capacity required.
     /// - [`FitError::Overflows`] if the number of elements `iter`
-    ///   can produce is greater than `max_cap`.
+    ///   can produce is greater than the maximum capacity allowed.
     ///
     /// Note: Success on this method *does* guarantee that a properly
     /// implemented [`ExactSizeIterator`] will fit.
@@ -98,19 +88,22 @@ impl FitError {
     ///
     /// ```rust
     /// # use collection_cap::err::{FitError, Overflows, Underflows};
-    /// FitError::ensure_fits(&(0..10), 5, 15).expect("Should fit");
+    /// # use collection_cap::cap::MinMaxCapVal;
+    /// FitError::ensure_fits(&(0..10), MinMaxCapVal::new(5, 15)).expect("Should fit");
     ///
-    /// let err = FitError::ensure_fits(&(0..20), 5, 15).expect_err("Should overflow");
+    /// let err = FitError::ensure_fits(&(0..20), MinMaxCapVal::new(5, 15)).expect_err("Should overflow");
     /// assert_eq!(err, FitError::Overflows(Overflows::new(20, 15)));
     ///
-    /// let err = FitError::ensure_fits(&(0..3), 5, 15).expect_err("Should underflow");
+    /// let err = FitError::ensure_fits(&(0..3), MinMaxCapVal::new(5, 15)).expect_err("Should underflow");
     /// assert_eq!(err, FitError::Underflows(Underflows::new(3, 5)));
     /// ```
-    pub fn ensure_fits<I>(iter: &I, min_cap: usize, max_cap: usize) -> Result<(), Self>
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ensure_fits<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: ExactSizeIterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        Self::ensure_can_fit(iter, min_cap, max_cap)
+        Self::ensure_can_fit(iter, constraint)
     }
 }
 
@@ -184,23 +177,12 @@ impl Overflows {
         self.max_cap
     }
 
-    fn ensure_hint_can_fit(hint: SizeHint, max_cap: usize) -> Result<(), Self> {
-        let min_size = hint.lower();
-        (min_size > max_cap).then_err(Self { min_size, max_cap })
-    }
-
-    /// Ensures that the minimum number of elements `iter` produces is less
-    /// than or equal to `max_cap`.
-    ///
-    /// # Arguments
-    ///
-    /// - `iter`: The [`Iterator`] to check.
-    /// - `max_cap`: The maximum capacity allowed.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`Overflows`] if the minimum number of elements the iterator
-    ///   can produce is greater than `max_cap`.
+    ///   can produce is greater than the allowed maximum capacity.
     ///
     /// Note: Success on this method does not guarantee that `iter` will not
     /// overflow, only that it does not always produce more elements than
@@ -214,18 +196,20 @@ impl Overflows {
     ///
     /// ```rust
     /// # use collection_cap::err::Overflows;
-    /// Overflows::ensure_can_fit(&(0..15), 20).expect("Should fit");
+    /// # use collection_cap::cap::MaxCapVal;
+    /// Overflows::ensure_can_fit(&(0..15), MaxCapVal(20)).expect("Should fit");
     ///
-    /// let err = Overflows::ensure_can_fit(&(0..25), 20).expect_err("Should overflow");
+    /// let err = Overflows::ensure_can_fit(&(0..25), MaxCapVal(20)).expect_err("Should overflow");
     /// assert_eq!(err.min_size(), 25);
     /// assert_eq!(err.max_cap(), 20);
     /// ```
-    pub fn ensure_can_fit<I>(iter: &I, max_cap: usize) -> Result<(), Self>
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ensure_can_fit<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: Iterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        let hint = iter.size_hint().try_into().expect(INVALID_SIZE_HINT_MSG);
-        Self::ensure_hint_can_fit(hint, max_cap)
+        constraint.check_if_can_fit(iter)
     }
 
     /// Ensures that the fixed number of elements `iter` produces does not
@@ -234,12 +218,12 @@ impl Overflows {
     /// # Arguments
     ///
     /// - `iter`: The [`ExactSizeIterator`] to check.
-    /// - `max_cap`: The maximum capacity allowed.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`Overflows`] if the number of elements the iterator will
-    ///   produce is greater than `max_cap`.
+    ///   produce is greater than the allowed maximum capacity.
     ///
     /// Note: Success on this method *does* guarantee that a properly
     /// implemented [`ExactSizeIterator`] will fit.
@@ -252,21 +236,24 @@ impl Overflows {
     ///
     /// ```rust
     /// # use collection_cap::err::Overflows;
-    /// Overflows::ensure_fits(&(0..15), 20).expect("Should fit");
+    /// # use collection_cap::cap::MaxCapVal;
+    /// Overflows::ensure_fits(&(0..15), MaxCapVal(20)).expect("Should fit");
     ///
-    /// let err = Overflows::ensure_fits(&(0..25), 20).expect_err("Should overflow");
+    /// let err = Overflows::ensure_fits(&(0..25), MaxCapVal(20)).expect_err("Should overflow");
     /// assert_eq!(err.min_size(), 25);
     /// assert_eq!(err.max_cap(), 20);
     /// ```
-    pub fn ensure_fits<I>(iter: &I, max_cap: usize) -> Result<(), Self>
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ensure_fits<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: ExactSizeIterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        Self::ensure_can_fit(iter, max_cap)
+        Self::ensure_can_fit(iter, constraint)
     }
 
     /// Ensures that the minimum number of elements `iter` produces does not
-    /// exceed the [remaining capacity](MaxCap::remaining_cap) of `collection`.
+    /// exceed the [remaining capacity](RemainingCap::remaining_cap) of `collection`.
     ///
     /// # Arguments
     ///
@@ -309,11 +296,11 @@ impl Overflows {
         I: Iterator + ?Sized,
         C: RemainingCap + ?Sized,
     {
-        Self::ensure_can_fit(iter, collection.remaining_cap())
+        Self::ensure_can_fit(iter, &MaxCapVal(collection.remaining_cap()))
     }
 
     /// Ensures that the fixed number of elements `iter` produces does not
-    /// exceed the [remaining capacity](MaxCap::remaining_cap) of `collection`.
+    /// exceed the [remaining capacity](RemainingCap::remaining_cap) of `collection`.
     ///
     /// # Arguments
     ///
@@ -350,7 +337,7 @@ impl Overflows {
         I: ExactSizeIterator + ?Sized,
         C: RemainingCap + ?Sized,
     {
-        Self::ensure_fits(iter, collection.remaining_cap())
+        Self::ensure_fits(iter, &MaxCapVal(collection.remaining_cap()))
     }
 }
 
@@ -410,25 +397,12 @@ impl Underflows {
         self.min_cap
     }
 
-    fn ensure_hint_can_fit(hint: SizeHint, min_cap: usize) -> Result<(), Self> {
-        hint.upper()
-            .filter(|&max_size| max_size < min_cap)
-            .map(|max_size| Self { max_size, min_cap })
-            .map_or(Ok(()), Err)
-    }
-
-    /// Ensures the maximum number of elements `iter` produces is greater than
-    /// or equal to `min_cap`.
-    ///
-    /// # Arguments
-    ///
-    /// - `iter`: The [`Iterator`] to check.
-    /// - `min_cap`: The minimum capacity required.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`Underflows`] if the maximum number of elements `iter` can produce
-    ///   is less than `min_cap`.
+    ///   is less than the required minimum capacity.
     ///
     /// Note: Success on this method does not guarantee that `iter` will
     /// produce enough elements, only that it is possible.
@@ -441,18 +415,20 @@ impl Underflows {
     ///
     /// ```rust
     /// # use collection_cap::err::Underflows;
-    /// Underflows::ensure_can_fit(&(0..15), 10).expect("Should fit");
+    /// # use collection_cap::cap::MinCapVal;
+    /// Underflows::ensure_can_fit(&(0..15), MinCapVal(10)).expect("Should fit");
     ///
-    /// let err = Underflows::ensure_can_fit(&(0..5), 20).expect_err("Should underflow");
+    /// let err = Underflows::ensure_can_fit(&(0..5), MinCapVal(20)).expect_err("Should underflow");
     /// assert_eq!(err.max_size(), 5);
     /// assert_eq!(err.min_cap(), 20);
     /// ```
-    pub fn ensure_can_fit<I>(iter: &I, min_cap: usize) -> Result<(), Self>
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ensure_can_fit<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: Iterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        let hint = iter.size_hint().try_into().expect(INVALID_SIZE_HINT_MSG);
-        Self::ensure_hint_can_fit(hint, min_cap)
+        constraint.check_if_can_fit(iter)
     }
 
     /// Ensures `iter` produces enough elements to satisfy `min_cap`.
@@ -460,12 +436,12 @@ impl Underflows {
     /// # Arguments
     ///
     /// - `iter`: The [`ExactSizeIterator`] to check.
-    /// - `min_cap`: The minimum capacity required.
+    /// - `constraint`: The constraint the iterator must fulfill.
     ///
     /// # Errors
     ///
     /// - [`Underflows`] if the number of elements `iter` will produce
-    ///   is less than `min_cap`.
+    ///   is less than the required minimum capacity.
     ///
     /// Note: Success on this method *does* guarantee that a properly
     /// implemented [`ExactSizeIterator`] will fit.
@@ -478,17 +454,20 @@ impl Underflows {
     ///
     /// ```rust
     /// # use collection_cap::err::Underflows;
-    /// Underflows::ensure_fits(&(0..15), 10).expect("Should fit");
+    /// # use collection_cap::cap::MinCapVal;
+    /// Underflows::ensure_fits(&(0..15), MinCapVal(10)).expect("Should fit");
     ///
-    /// let err = Underflows::ensure_fits(&(0..5), 20).expect_err("Should underflow");
+    /// let err = Underflows::ensure_fits(&(0..5), MinCapVal(20)).expect_err("Should underflow");
     /// assert_eq!(err.max_size(), 5);
     /// assert_eq!(err.min_cap(), 20);
     /// ```
-    pub fn ensure_fits<I>(iter: &I, min_cap: usize) -> Result<(), Self>
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn ensure_fits<I, V>(iter: &I, constraint: &V) -> Result<(), Self>
     where
         I: ExactSizeIterator + ?Sized,
+        V: ValConstraint<Error = Self> + ?Sized,
     {
-        Self::ensure_can_fit(iter, min_cap)
+        Self::ensure_can_fit(iter, constraint)
     }
 }
 

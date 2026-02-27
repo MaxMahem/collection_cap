@@ -47,7 +47,7 @@ let mut vec = ArrayVec::<i32, 10>::new();
 
 ### `ValConstraint`s using `FitError`, `Overflows`, `Underflows`
 
-These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint` based on a runtime capacity constraint, `ValConstraint`. This is particularly useful for validating that an iterator can fit into the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
+These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint` and a runtime capacity constraint, `ValConstraint`. This is particularly useful for validating that an iterator can fit into the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
 
 ```rust
 use collection_cap::IterCapExt;
@@ -73,8 +73,6 @@ use collection_cap::IterCapExt;
 
 Note: that for non-exact size iterators, these error types can only guarantee that an iterator theoretically *can* fit in the given capacity. They do not guarantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. A 'universal' size hint (`(0, None)`), for example, should fit within any capacity.
 
-Failure on these methods, however, still guarantees that an iterator can not fit in the given capacity.
-
 ```rust
 use collection_cap::IterCapExt;
 
@@ -85,13 +83,15 @@ infinite_iter.ensure_can_fit::<[i32; 10]>()
     .expect("A 'universal' size hint is compatible with any capacity");
 ```
 
+Failure on these methods, however, still guarantees that an iterator can not fit in the given capacity.
+
 ## Capacity Markers
 
 In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator can produce a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize` for type-level constraints, and `MinCapVal`, `MaxCapVal`, `MinMaxCapVal`, and `ExactSizeVal` for runtime constraints.
 
 ## Implmenting for local types
 
-Implementing `CapConstraint` for local types is straightforward. Implement any appropriate `MinCap`, `MaxCap`, and/or `RemainingCap` traits, and the `CapConstraint` trait or `ValConstraint` trait, as appropriate.
+Implementing `CapConstraint` for local types is straightforward. Implement any appropriate `MinCap`, `MaxCap`, and/or `RemainingCap` traits, and either the `CapConstraint` trait or `ValConstraint` trait, as appropriate.
 
 ## Installation
 

@@ -1,4 +1,5 @@
 use arrayvec::ArrayVec;
+use collection_cap::cap::{MaxCapVal, MinCapVal, MinMaxCapVal};
 use collection_cap::err::{CapOverflow, CapUnderflow, FitError, Overflows, Underflows};
 
 use crate::common::consts::*;
@@ -13,26 +14,26 @@ mod fit_error {
     mod ensure_can_fit {
         use super::*;
 
-        check_eq!(fits: FitError::ensure_can_fit(&FITS_ITER, CAP, CAP) => Ok(()));
-        check_eq!(overflow: FitError::ensure_can_fit(&OVER_ITER, CAP, CAP) 
+        check_eq!(fits: FitError::ensure_can_fit(&FITS_ITER, &MinMaxCapVal::new(CAP, CAP)) => Ok(()));
+        check_eq!(overflow: FitError::ensure_can_fit(&OVER_ITER, &MinMaxCapVal::new(CAP, CAP)) 
             => Err(FitError::Overflows(CAP_OVERFLOWS)));
-        check_eq!(underflow: FitError::ensure_can_fit(&UNDER_ITER, CAP, CAP) 
+        check_eq!(underflow: FitError::ensure_can_fit(&UNDER_ITER, &MinMaxCapVal::new(CAP, CAP)) 
             => Err(FitError::Underflows(CAP_UNDERFLOWS)));
 
-        panics!(bad_iter: FitError::ensure_can_fit(&INVALID_ITERATOR, CAP, CAP) 
+        panics!(bad_iter: FitError::ensure_can_fit(&INVALID_ITERATOR, &MinMaxCapVal::new(CAP, CAP)) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
     mod ensure_fits {
         use super::*;
 
-        check_eq!(fits: FitError::ensure_fits(&FITS_ITER, CAP, CAP) => Ok(()));
-        check_eq!(overflow: FitError::ensure_fits(&OVER_ITER, CAP, CAP) 
+        check_eq!(fits: FitError::ensure_fits(&FITS_ITER, &MinMaxCapVal::new(CAP, CAP)) => Ok(()));
+        check_eq!(overflow: FitError::ensure_fits(&OVER_ITER, &MinMaxCapVal::new(CAP, CAP)) 
             => Err(FitError::Overflows(CAP_OVERFLOWS)));
-        check_eq!(underflow: FitError::ensure_fits(&UNDER_ITER, CAP, CAP) 
+        check_eq!(underflow: FitError::ensure_fits(&UNDER_ITER, &MinMaxCapVal::new(CAP, CAP)) 
             => Err(FitError::Underflows(CAP_UNDERFLOWS)));
 
-        panics!(bad_iter: FitError::ensure_fits(&INVALID_ITERATOR, CAP, CAP) 
+        panics!(bad_iter: FitError::ensure_fits(&INVALID_ITERATOR, &MinMaxCapVal::new(CAP, CAP)) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
@@ -59,11 +60,11 @@ mod overflows {
     mod ensure_can_fit {
         use super::*;
 
-        check_eq!(fits: Overflows::ensure_can_fit(&FITS_ITER, CAP) => Ok(()));
-        check_eq!(overflow: Overflows::ensure_can_fit(&OVER_ITER, CAP) 
+        check_eq!(fits: Overflows::ensure_can_fit(&FITS_ITER, &MaxCapVal(CAP)) => Ok(()));
+        check_eq!(overflow: Overflows::ensure_can_fit(&OVER_ITER, &MaxCapVal(CAP)) 
             => Err(CAP_OVERFLOWS));
 
-        panics!(bad_iter: Overflows::ensure_can_fit(&INVALID_ITERATOR, CAP) 
+        panics!(bad_iter: Overflows::ensure_can_fit(&INVALID_ITERATOR, &MaxCapVal(CAP)) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
@@ -83,11 +84,11 @@ mod overflows {
     mod ensure_fits {
         use super::*;
 
-        check_eq!(fits: Overflows::ensure_fits(&FITS_ITER, CAP) => Ok(()));
-        check_eq!(overflow: Overflows::ensure_fits(&OVER_ITER, CAP) 
+        check_eq!(fits: Overflows::ensure_fits(&FITS_ITER, &MaxCapVal(CAP)) => Ok(()));
+        check_eq!(overflow: Overflows::ensure_fits(&OVER_ITER, &MaxCapVal(CAP)) 
             => Err(CAP_OVERFLOWS));
 
-        panics!(bad_iter: Overflows::ensure_fits(&INVALID_ITERATOR, CAP) 
+        panics!(bad_iter: Overflows::ensure_fits(&INVALID_ITERATOR, &MaxCapVal(CAP)) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
@@ -118,19 +119,19 @@ mod underflows {
     mod ensure_can_fit {
         use super::*;
 
-        check_eq!(fits: Underflows::ensure_can_fit(&FITS_ITER, CAP) => Ok(()));
-        check_eq!(underflow: Underflows::ensure_can_fit(&UNDER_ITER, CAP) 
+        check_eq!(fits: Underflows::ensure_can_fit(&FITS_ITER, &MinCapVal(CAP)) => Ok(()));
+        check_eq!(underflow: Underflows::ensure_can_fit(&UNDER_ITER, &MinCapVal(CAP)) 
             => Err(CAP_UNDERFLOWS));
 
-        panics!(bad_iter: Underflows::ensure_can_fit(&INVALID_ITERATOR, CAP) 
+        panics!(bad_iter: Underflows::ensure_can_fit(&INVALID_ITERATOR, &MinCapVal(CAP)) 
             => "Invalid size hint: InvalidSizeHint");
     }
 
     mod ensure_fits {
         use super::*;
 
-        check_eq!(fits: Underflows::ensure_fits(&FITS_ITER, CAP) => Ok(()));
-        check_eq!(underflow: Underflows::ensure_fits(&UNDER_ITER, CAP) 
+        check_eq!(fits: Underflows::ensure_fits(&FITS_ITER, &MinCapVal(CAP)) => Ok(()));
+        check_eq!(underflow: Underflows::ensure_fits(&UNDER_ITER, &MinCapVal(CAP)) 
             => Err(CAP_UNDERFLOWS));
     }
 

@@ -1,5 +1,9 @@
+use size_hinter::SizeHint;
+
 use crate::ValConstraint;
 use crate::err::{FitError, Overflows, Underflows};
+
+const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
 
 /// A runtime constraint specifying a maximum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -12,7 +16,9 @@ impl ValConstraint for MaxCapVal {
     where
         I: Iterator + ?Sized,
     {
-        Overflows::ensure_can_fit(iter, self.0)
+        let hint: SizeHint = iter.size_hint().try_into().expect(INVALID_SIZE_HINT_MSG);
+        let min_size = hint.lower();
+        if min_size > self.0 { Err(Overflows::new(min_size, self.0)) } else { Ok(()) }
     }
 }
 
@@ -27,7 +33,11 @@ impl ValConstraint for MinCapVal {
     where
         I: Iterator + ?Sized,
     {
-        Underflows::ensure_can_fit(iter, self.0)
+        let hint: SizeHint = iter.size_hint().try_into().expect(INVALID_SIZE_HINT_MSG);
+        hint.upper()
+            .filter(|&max_size| max_size < self.0)
+            .map(|max_size| Underflows::new(max_size, self.0))
+            .map_or(Ok(()), Err)
     }
 }
 
@@ -41,7 +51,7 @@ pub struct MinMaxCapVal {
 }
 
 impl MinMaxCapVal {
-    /// Creates a new [`MinMaxConstraint`].
+    /// Creates a new [`MinMaxCapVal`].
     ///
     /// # Panics
     ///
@@ -74,7 +84,8 @@ impl ValConstraint for MinMaxCapVal {
     where
         I: Iterator + ?Sized,
     {
-        FitError::ensure_can_fit(iter, self.min, self.max)
+        MinCapVal(self.min).check_if_can_fit(iter).map_err(FitError::Underflows)?;
+        MaxCapVal(self.max).check_if_can_fit(iter).map_err(FitError::Overflows)
     }
 }
 
@@ -89,6 +100,6 @@ impl ValConstraint for ExactCapVal {
     where
         I: Iterator + ?Sized,
     {
-        FitError::ensure_can_fit(iter, self.0, self.0)
+        MinMaxCapVal::new(self.0, self.0).check_if_can_fit(iter)
     }
 }
