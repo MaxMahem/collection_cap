@@ -1,7 +1,7 @@
 use size_hinter::SizeHint;
 
-use crate::ValConstraint;
-use crate::err::{FitError, Overflows, Underflows};
+use crate::VariableCap;
+use crate::err::{Overflows, Underflows, VarCapError};
 
 const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
 
@@ -9,10 +9,10 @@ const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct MaxCapVal(pub usize);
 
-impl ValConstraint for MaxCapVal {
+impl VariableCap for MaxCapVal {
     type Error = Overflows;
 
-    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
@@ -26,10 +26,10 @@ impl ValConstraint for MaxCapVal {
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct MinCapVal(pub usize);
 
-impl ValConstraint for MinCapVal {
+impl VariableCap for MinCapVal {
     type Error = Underflows;
 
-    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
@@ -77,15 +77,15 @@ impl MinMaxCapVal {
     }
 }
 
-impl ValConstraint for MinMaxCapVal {
-    type Error = FitError;
+impl VariableCap for MinMaxCapVal {
+    type Error = VarCapError;
 
-    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        MinCapVal(self.min).check_if_can_fit(iter).map_err(FitError::Underflows)?;
-        MaxCapVal(self.max).check_if_can_fit(iter).map_err(FitError::Overflows)
+        MinCapVal(self.min).check_compatability(iter).map_err(VarCapError::Underflows)?;
+        MaxCapVal(self.max).check_compatability(iter).map_err(VarCapError::Overflows)
     }
 }
 
@@ -93,13 +93,13 @@ impl ValConstraint for MinMaxCapVal {
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct ExactCapVal(pub usize);
 
-impl ValConstraint for ExactCapVal {
-    type Error = FitError;
+impl VariableCap for ExactCapVal {
+    type Error = VarCapError;
 
-    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        MinMaxCapVal::new(self.0, self.0).check_if_can_fit(iter)
+        MinMaxCapVal::new(self.0, self.0).check_compatability(iter)
     }
 }

@@ -1,0 +1,157 @@
+use crate::err::{CapError, CapOverflow, CapUnderflow};
+use crate::{MaxCap, MinCap, VariableCap};
+
+/// A violation of a [`VariableCap`].
+///
+/// See [`crate::VariableCap#note-on-compatibility`] for details.
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum VarCapError {
+    /// The minimum number of elements the iterator will produce is greater
+    /// than the maximum number of elements that the capacity allows.
+    #[error(transparent)]
+    Overflows(#[from] Overflows),
+
+    /// The maximum number of elements the iterator will produce is less than
+    /// the minimum number of elements the capacity requires.
+    #[error(transparent)]
+    Underflows(#[from] Underflows),
+}
+
+impl<C: MaxCap + ?Sized> From<CapOverflow<C>> for VarCapError {
+    fn from(value: CapOverflow<C>) -> Self {
+        Self::Overflows(value.into())
+    }
+}
+
+impl<C: MinCap + ?Sized> From<CapUnderflow<C>> for VarCapError {
+    fn from(value: CapUnderflow<C>) -> Self {
+        Self::Underflows(value.into())
+    }
+}
+
+impl<C: MaxCap + MinCap + ?Sized> From<CapError<C>> for VarCapError {
+    fn from(value: CapError<C>) -> Self {
+        match value {
+            CapError::Overflow(overflow) => Self::Overflows(overflow.into()),
+            CapError::Underflow(underflow) => Self::Underflows(underflow.into()),
+        }
+    }
+}
+
+/// A overflow violation of a [`VariableCap`] indicating that the minimum
+/// number of elements an [`Iterator`] produces is greater than the maximum
+/// capacity.
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[error("Capacity overflow: min iterator size {min_size} > max capacity {max_cap}")]
+pub struct Overflows {
+    /// The minimum number of elements produced.
+    min_size: usize,
+    /// The maximum capacity of the collection.
+    max_cap: usize,
+}
+
+impl Overflows {
+    /// Creates a new [`Overflows`] with the given `min_size` and `max_cap`.
+    ///
+    /// # Arguments
+    ///
+    /// - `min_size`: The min number of elements the [`Iterator`] can produce.
+    /// - `max_cap`: The max number of elements the capacity constraint allows.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `min_size` > `max_cap`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use collection_cap::err::Overflows;
+    /// let err = Overflows::new(10, 5);
+    /// assert_eq!(err.min_size(), 10);
+    /// assert_eq!(err.max_cap(), 5);
+    /// ```
+    #[must_use]
+    pub const fn new(min_size: usize, max_cap: usize) -> Self {
+        match min_size > max_cap {
+            true => Self { min_size, max_cap },
+            false => panic!("min_size must be > max_cap"),
+        }
+    }
+
+    /// The minimum number of elements the [`Iterator`] can produce.
+    #[must_use]
+    pub const fn min_size(&self) -> usize {
+        self.min_size
+    }
+
+    /// The maximum number of elements the capacity constraint allows.
+    #[must_use]
+    pub const fn max_cap(&self) -> usize {
+        self.max_cap
+    }
+}
+
+impl<C: MaxCap + ?Sized> From<CapOverflow<C>> for Overflows {
+    fn from(err: CapOverflow<C>) -> Self {
+        Self { min_size: err.min_size(), max_cap: C::MAX_CAP }
+    }
+}
+
+/// A violation of a [`VariableCap`] indicating that an iterator produces
+/// fewer elements than the minimum required capacity.
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+#[error("Capacity underflow: max iterator size {max_size} < min capacity {min_cap}")]
+pub struct Underflows {
+    /// The maximum number of elements produced.
+    max_size: usize,
+    /// The minimum capacity of the collection.
+    min_cap: usize,
+}
+
+impl Underflows {
+    /// Creates a new [`Underflows`] with the given maximum size
+    /// and minimum capacity.
+    ///
+    /// # Arguments
+    ///
+    /// - `max_size`: The maximum number of elements produced.
+    /// - `min_cap`: The minimum capacity required.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max_size` is greater than `min_cap`.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use collection_cap::err::Underflows;
+    /// let err = Underflows::new(5, 10);
+    /// assert_eq!(err.max_size(), 5);
+    /// assert_eq!(err.min_cap(), 10);
+    /// ```
+    #[must_use]
+    pub const fn new(max_size: usize, min_cap: usize) -> Self {
+        match max_size < min_cap {
+            true => Self { max_size, min_cap },
+            false => panic!("max_size must be < min_cap"),
+        }
+    }
+
+    /// The maximum number of elements produced.
+    #[must_use]
+    pub const fn max_size(&self) -> usize {
+        self.max_size
+    }
+
+    /// The minimum capacity of the collection.
+    #[must_use]
+    pub const fn min_cap(&self) -> usize {
+        self.min_cap
+    }
+}
+
+impl<C: MinCap + ?Sized> From<CapUnderflow<C>> for Underflows {
+    fn from(err: CapUnderflow<C>) -> Self {
+        Self { max_size: err.max_size(), min_cap: C::MIN_CAP }
+    }
+}

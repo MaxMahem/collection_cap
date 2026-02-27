@@ -1,24 +1,21 @@
-use crate::err::Overflows;
-use crate::{CapConstraint, RemainingCap, ValConstraint};
+use crate::{StaticCap, VariableCap};
 
-/// An extension trait for `Iterator` to check if the iterator can fit within
-/// target capacity constraints.
+/// An extension trait for `Iterator` to check if the iterator is compatible with
+/// capacity constraints.
 pub trait IterCapExt {
-    /// Ensures that this iterator can fit a capacity constraint `C`.
+    /// Ensures that this iterator is compatible with the capacity of `C`.
+    ///
+    /// Note: Does not guarantee that iteration will fit within `C`'s capacity.
+    /// See [`StaticCap#note-on-compatibility`] for details.
     ///
     /// # Type Parameters
     ///
-    /// - `C`: The capacity constraint.
+    /// - `C`: The collection or capacity constraint.
     ///
     /// # Errors
     ///
-    /// - [`C::Error`](CapConstraint::Error) if the iterator cannot meet the
-    ///   capacity constraints.
-    ///
-    /// Note: Success on this method does not guarantee that the iterator will
-    /// meet `C`'s capacity constraints. It only guarantees that the iterator's
-    /// [size hint](Iterator::size_hint) does not declare it is impossible to
-    /// meet the capacity constraint.
+    /// [`C::Error`](StaticCap::Error) if the iterator is not compatible
+    /// with the capacity constraints.
     ///
     /// # Panics
     ///
@@ -28,31 +25,37 @@ pub trait IterCapExt {
     ///
     /// ```rust
     /// # use collection_cap::IterCapExt;
-    /// (0..10).ensure_can_fit::<[i32; 10]>().expect("Fits MIN & MAX");
-    /// (0..11).ensure_can_fit::<[i32; 10]>().expect_err("Should overflow");
-    /// (0..9).ensure_can_fit::<[i32; 10]>().expect_err("Should underflow");
+    /// (0..10).ensure_compatible::<[i32; 10]>().expect("Is compatible");
+    /// (0..11).ensure_compatible::<[i32; 10]>().expect_err("Should overflow");
+    /// (0..9).ensure_compatible::<[i32; 10]>().expect_err("Should underflow");
     /// ```
-    fn ensure_can_fit<C>(&self) -> Result<(), C::Error>
+    fn ensure_compatible<C>(&self) -> Result<(), C::Error>
     where
         Self: Iterator,
-        C: CapConstraint + ?Sized,
+        C: StaticCap + ?Sized,
     {
-        C::check_if_can_fit(self)
+        C::check_compatability(self)
     }
 
-    /// Ensures that this iterator can fit a capacity constraint `C`.
+    /// Ensures that this iterator is compatible with the capacity of `cap`.
+    ///
+    /// Does not guarantee that iteration will fit within `cap`'s capacity. See
+    /// [`VariableCap#note-on-compatibility`] for details.
+    ///
+    /// # Arguments
+    ///
+    /// - `cap`: A collection or runtime capacity constraint.
     ///
     /// # Type Parameters
     ///
-    /// - `C`: The capacity constraint.
+    /// - `CAP`: The type of the collection or runtime capacity constraint.
     ///
     /// # Errors
     ///
-    /// - [`C::Error`](CapConstraint::Error) if `C`'s capacity constraints are
-    ///   not met.
+    /// [`CAP::Error`](VariableCap::Error) if the iterator is not compatible
+    /// with the capacity constraints.
     ///
-    /// Note: Success on this method *does* guarantee that a properly
-    /// implemented iterator will meet `C`'s constraint when iterated.
+    /// Note:
     ///
     /// # Panics
     ///
@@ -62,162 +65,23 @@ pub trait IterCapExt {
     ///
     /// ```rust
     /// # use collection_cap::IterCapExt;
-    /// (0..10).ensure_fits::<[i32; 10]>().expect("Fits MIN & MAX");
-    /// (0..11).ensure_fits::<[i32; 10]>().expect_err("Should overflow");
-    /// (0..9).ensure_fits::<[i32; 10]>().expect_err("Should underflow");
+    /// (0..10).ensure_compatible_with(..=10).expect("Should be compatible");
+    /// (0..11).ensure_compatible_with(..=10).expect_err("Should overflow");
     /// ```
-    fn ensure_fits<C>(&self) -> Result<(), C::Error>
-    where
-        Self: ExactSizeIterator,
-        C: CapConstraint + ?Sized,
-    {
-        C::check_if_can_fit(self)
-    }
-
-    /// Ensures that this iterator can fit a capacity constraint `C`.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `C`: The capacity constraint.
-    ///
-    /// # Errors
-    ///
-    /// - [`Overflows`] if the minimum number of elements the iterator
-    ///   can produce is greater than the remaining capacity of the collection.
-    ///
-    /// Note: Success on this method *does* guarantee that a properly
-    /// implemented iterator will meet `C`'s constraint when iterated.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the iterator's [size hint](Iterator::size_hint) is invalid.
-    ///
-    /// # Examples
     ///
     /// ```rust
     /// # use collection_cap::IterCapExt;
     /// # use arrayvec::ArrayVec;
-    /// let vec: ArrayVec<i32, 10> = ArrayVec::new();
-    /// (0..10).ensure_can_fit_in(&vec).expect("Fits");
-    /// (0..11).ensure_can_fit_in(&vec).expect_err("Should overflow");
+    /// let array_vec: ArrayVec<i32, 10> = ArrayVec::new();
+    /// (0..10).ensure_compatible_with(&array_vec).expect("Should be compatible");
+    /// (0..11).ensure_compatible_with(&array_vec).expect_err("Should overflow");
     /// ```
-    fn ensure_can_fit_in<C>(&self, collection: &C) -> Result<(), Overflows>
+    fn ensure_compatible_with<CAP>(&self, cap: CAP) -> Result<(), CAP::Error>
     where
         Self: Iterator,
-        C: RemainingCap + ?Sized,
+        CAP: VariableCap,
     {
-        Overflows::ensure_can_fit_in(self, collection)
-    }
-
-    /// Ensures that this iterator can fit a capacity constraint `C`.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `C`: The capacity constraint.
-    ///
-    /// # Errors
-    ///
-    /// - [`Overflows`] if the number of elements the iterator will
-    ///   produce is greater than the remaining capacity of the collection.
-    ///
-    /// Note: Success on this method *does* guarantee that a properly
-    /// implemented iterator will meet `C`'s constraint when iterated.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the iterator's [size hint](Iterator::size_hint) is invalid.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::IterCapExt;
-    /// # use arrayvec::ArrayVec;
-    /// let vec: ArrayVec<i32, 10> = ArrayVec::new();
-    /// (0..10).ensure_fits_in(&vec).expect("Fits");
-    /// (0..11).ensure_fits_in(&vec).expect_err("Should overflow");
-    /// ```
-    fn ensure_fits_in<C>(&self, collection: &C) -> Result<(), Overflows>
-    where
-        Self: ExactSizeIterator,
-        C: RemainingCap + ?Sized,
-    {
-        Overflows::ensure_fits_in(self, collection)
-    }
-
-    /// Ensures that this iterator can fit within `constraint`.
-    ///
-    /// # Arguments
-    ///
-    /// - `constraint`: A runtime capacity constraint.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `C`: The type of the runtime capacity constraint.
-    ///
-    /// # Errors
-    ///
-    /// - [`C::Error`](ValConstraint::Error) if the iterator cannot meet the
-    ///   capacity constraints.
-    ///
-    /// Note: Success on this method does not guarantee that the iterator will
-    /// meet `constraint`'s capacity constraints. It only guarantees that the
-    /// iterator's [size hint](Iterator::size_hint) does not declare it is
-    /// impossible to meet the capacity constraint.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the iterator's [size hint](Iterator::size_hint) is invalid.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::IterCapExt;
-    /// (0..10).ensure_can_fit_within(..=10).expect("Fits");
-    /// (0..11).ensure_can_fit_within(..=10).expect_err("Should overflow");
-    /// ```
-    fn ensure_can_fit_within<C>(&self, constraint: C) -> Result<(), C::Error>
-    where
-        Self: Iterator,
-        C: ValConstraint,
-    {
-        constraint.check_if_can_fit(self)
-    }
-
-    /// Ensures that this iterator fits within `constraint`.
-    ///
-    /// # Arguments
-    ///
-    /// - `constraint`: A runtime capacity constraint.
-    ///
-    /// # Type Parameters
-    ///
-    /// - `C`: The type of the runtime capacity constraint.
-    ///
-    /// # Errors
-    ///
-    /// - [`C::Error`](ValConstraint::Error) if `constraint`'s capacity
-    ///   constraints are not met.
-    ///
-    /// Note: Success on this method *does* guarantee that a properly
-    /// implemented iterator will meet `constraint`'s constraint when iterated.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the iterator's [size hint](Iterator::size_hint) is invalid.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::IterCapExt;
-    /// (0..10).ensure_fits_within(..=10).expect("Fits");
-    /// (0..11).ensure_fits_within(..=10).expect_err("Should overflow");
-    /// ```
-    fn ensure_fits_within<C>(&self, constraint: C) -> Result<(), C::Error>
-    where
-        Self: ExactSizeIterator,
-        C: ValConstraint,
-    {
-        constraint.check_if_can_fit(self)
+        cap.check_compatability(self)
     }
 }
 

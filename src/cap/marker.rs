@@ -1,5 +1,5 @@
 use crate::err::{CapError, CapOverflow, CapUnderflow};
-use crate::{CapConstraint, MaxCap, MinCap};
+use crate::{MaxCap, MinCap, StaticCap};
 
 /// A marker for a minimum capacity constraint.
 ///
@@ -13,11 +13,11 @@ impl<const MIN: usize> MinCap for MinCapMarker<MIN> {
     const MIN_CAP: usize = MIN;
 }
 
-impl<const MIN: usize> CapConstraint for MinCapMarker<MIN> {
+impl<const MIN: usize> StaticCap for MinCapMarker<MIN> {
     type Error = CapUnderflow<Self>;
 
-    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
-        CapUnderflow::ensure_can_fit(iter)
+    fn check_compatability<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapUnderflow::ensure_compatible(iter)
     }
 }
 
@@ -33,11 +33,11 @@ impl<const MAX: usize> MaxCap for MaxCapMarker<MAX> {
     const MAX_CAP: usize = MAX;
 }
 
-impl<const MAX: usize> CapConstraint for MaxCapMarker<MAX> {
+impl<const MAX: usize> StaticCap for MaxCapMarker<MAX> {
     type Error = CapOverflow<Self>;
 
-    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
-        CapOverflow::ensure_can_fit(iter)
+    fn check_compatability<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapOverflow::ensure_compatible(iter)
     }
 }
 
@@ -60,11 +60,11 @@ impl<const MIN: usize, const MAX: usize> MaxCap for MinMaxCap<MIN, MAX> {
     const MAX_CAP: usize = MAX;
 }
 
-impl<const MIN: usize, const MAX: usize> CapConstraint for MinMaxCap<MIN, MAX> {
+impl<const MIN: usize, const MAX: usize> StaticCap for MinMaxCap<MIN, MAX> {
     type Error = CapError<Self>;
 
-    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
-        CapError::ensure_can_fit(iter)
+    fn check_compatability<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapError::ensure_compatible(iter)
     }
 }
 
@@ -84,10 +84,10 @@ impl<const SIZE: usize> MaxCap for ExactSize<SIZE> {
     const MAX_CAP: usize = SIZE;
 }
 
-impl<const SIZE: usize> CapConstraint for ExactSize<SIZE> {
+impl<const SIZE: usize> StaticCap for ExactSize<SIZE> {
     type Error = CapError<Self>;
 
-    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
-        CapError::ensure_can_fit(iter)
+    fn check_compatability<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error> {
+        CapError::ensure_compatible(iter)
     }
 }

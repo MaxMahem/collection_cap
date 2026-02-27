@@ -10,23 +10,27 @@ pub trait MaxCap {
     const MAX_CAP: usize;
 }
 
-/// A mutable collection with a [maximum capacity](MaxCap::MAX_CAP) constraint.
-pub trait RemainingCap: MaxCap {
-    /// Gets the remaining capacity of this collection.
-    fn remaining_cap(&self) -> usize;
-}
-
-/// A trait for types that have a capacity constraint.
+/// A trait for static capacity constraints.
 ///
-/// Note: This trait is seperate from the other traits because a type may
+/// This trait is separate from the other capacity traits because a type may
 /// implement multiple capacity constraints, and this trait can be used to
 /// determine how it errors.
-pub trait CapConstraint {
+///
+/// # Note on Compatibility
+///
+/// Success on a compatibility check means that the iterator's declared bounds
+/// (from [`Iterator::size_hint`]) do not contradict the capacity constraints.
+/// It does not guarantee that the iterator will actually be compatible during
+/// iteration, as the `size_hint` only reports the minimum and maximum number
+/// of elements an iterator *might* produce.
+///
+/// See [`Iterator::size_hint`] for more details on how these bounds are
+/// calculated.
+pub trait StaticCap {
     /// The actual target error type returned if the constraint is violated.
     type Error;
 
-    /// Checks if the given iterator can produce an element count that fits
-    /// within the constraint.
+    /// Checks if the given iterator is compatible with the capacity constraint.
     ///
     /// # Arguments
     ///
@@ -43,39 +47,56 @@ pub trait CapConstraint {
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
-    fn check_if_can_fit<I>(iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized;
 }
 
-/// A capacity constraint that is defined at runtime.
+/// A variable capacity constraint that is defined at runtime.
 ///
-/// Note: This trait is separate from `CapConstraint` because it requires
-/// an instance of the constraint to check against, whereas `CapConstraint`
-/// relies on type-level traits.
-pub trait ValConstraint {
+/// # Note on Compatibility
+///
+/// Success on a compatibility check means that the iterator's declared bounds
+/// (from [`Iterator::size_hint`]) do not contradict the capacity constraints.
+/// It does not guarantee that the iterator will actually be compatible during
+/// iteration, as the `size_hint` only reports the minimum and maximum number
+/// of elements an iterator *might* produce.
+///
+/// See [`Iterator::size_hint`] for more details on how these bounds are
+/// calculated.
+pub trait VariableCap {
     /// The error type returned if the constraint is violated.
     type Error;
 
-    /// Checks if the given iterator can produce an element count that fits
-    /// within the constraint.
+    /// Checks if `iter` is compatible with this capacity constraint.
     ///
     /// # Arguments
     ///
-    /// * `iter` - The iterator to check.
+    /// * `iter` - The [`Iterator`] to check.
     ///
     /// # Type Parameters
     ///
-    /// * `I` - The type of the iterator.
+    /// * `I` - The type of the [`Iterator`].
     ///
     /// # Errors
     ///
-    /// Returns [`Self::Error`] if the capacity constraints are not met.
+    /// [`Self::Error`] if the capacity constraints are not met.
     ///
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
-    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized;
+}
+
+impl<CAP: VariableCap + ?Sized> VariableCap for &CAP {
+    type Error = CAP::Error;
+
+    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    where
+        I: Iterator + ?Sized,
+    {
+        (**self).check_compatability(iter)
+    }
 }
