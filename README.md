@@ -15,7 +15,8 @@ This crate is `no_std` compatible and contains no `unsafe` code.
 - **`MinCap`**: Defines a minimum capacity constraint.
 - **`MaxCap`**: Defines a maximum capacity constraint.
 - **`RemainingCap`**: Allows a collection to report its remaining capacity.
-- **`CapConstraint`**: A trait for types that have a capacity constraint, and can be used to validate that an iterator can fit the capacity constraint.
+- **`CapConstraint`**: A trait for types that have a static, type-level capacity constraint, and can be used to validate that an iterator can fit that constraint.
+- **`ValConstraint`**: A trait for types that have a dynamic or runtime capacity constraint, and can be used to validate that an iterator can fit that constraint.
 
 Implementations are provided for `Array` by default. See the [features](#features) section for more conditional enabled implementations.
 
@@ -44,9 +45,9 @@ let mut vec = ArrayVec::<i32, 10>::new();
 (0..11).ensure_can_fit::<ArrayVec<i32, 10>>().expect_err("Should overflow");
 ```
 
-### `FitError`, `Overflows`, `Underflows`
+### `ValConstraint`s using `FitError`, `Overflows`, `Underflows`
 
-These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint` based on a runtime capacity constraint. This is particularly useful for validating that an iterator can fit into the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
+These error types validate and report if it is possible for an `Iterator` to fufill a capacity constraint based on its `size_hint` based on a runtime capacity constraint, `ValConstraint`. This is particularly useful for validating that an iterator can fit into the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
 
 ```rust
 use collection_cap::IterCapExt;
@@ -59,24 +60,31 @@ assert_eq!(ten_element_vec.remaining_capacity(), 5);
 (0..6).ensure_fits_in(&ten_element_vec).expect_err("6 more elements should not fit");
 ```
 
+It is also possible to specify the constraint to check directly, for example:
+
 ### Capacity Compatibility
 
-Note: that for non-exact size iterators, these error types can only guarantee that an iterator theoretically *can* fit in the given capacity. They do not guarantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. Failure however still guarantees that an iterator can not fit in the given capacity.
+Note: that for non-exact size iterators, these error types can only guarantee that an iterator theoretically *can* fit in the given capacity. They do not guarantee that an iterator will actually fit in the given capacity, as a size hint only reports the minimum and maximum number of elements an iterator can produce. A 'universal' size hint (`(0, None)`), for example, should fit within any capacity.
+
+Failure on these methods, however, still guarantees that an iterator can not fit in the given capacity.
 
 ```rust
 use collection_cap::IterCapExt;
 
 let infinite_iter = std::iter::repeat(0).filter(|_| true);
-assert_eq!(infinite_iter.size_hint(), (0, None), 
-    "A filtered repeat iterator can produce between 0 and infinite elements"); 
+assert_eq!(infinite_iter.size_hint(), (0, None), "Should produce A 'universal' size hint"); 
 
 infinite_iter.ensure_can_fit::<[i32; 10]>()
-    .expect("Since the iterator can produce 10 elements, it is compatible");
+    .expect("A 'universal' size hint is compatible with any capacity");
 ```
 
 ## Capacity Markers
 
-In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator can produce a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize`.
+In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator can produce a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize` for type-level constraints, and `MinCapVal`, `MaxCapVal`, `MinMaxCapVal`, and `ExactSizeVal` for runtime constraints.
+
+## Implmenting for local types
+
+Implementing `CapConstraint` for local types is straightforward. Implement any appropriate `MinCap`, `MaxCap`, and/or `RemainingCap` traits, and the `CapConstraint` trait or `ValConstraint` trait, as appropriate.
 
 ## Installation
 

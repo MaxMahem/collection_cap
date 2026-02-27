@@ -25,7 +25,8 @@ pub trait CapConstraint {
     /// The actual target error type returned if the constraint is violated.
     type Error;
 
-    /// Ensures that the given iterator can fit the capacity constraint.
+    /// Checks if the given iterator can produce an element count that fits
+    /// within the constraint.
     ///
     /// # Arguments
     ///
@@ -42,5 +43,39 @@ pub trait CapConstraint {
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
-    fn check_if_can_fit<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self::Error>;
+    fn check_if_can_fit<I>(iter: &I) -> Result<(), Self::Error>
+    where
+        I: Iterator + ?Sized;
+}
+
+/// A capacity constraint that is defined at runtime.
+///
+/// Note: This trait is separate from `CapConstraint` because it requires
+/// an instance of the constraint to check against, whereas `CapConstraint`
+/// relies on type-level traits.
+pub trait ValConstraint {
+    /// The actual target error type returned if the constraint is violated.
+    type Error;
+
+    /// Checks if the given iterator can produce an element count that fits
+    /// within the constraint.
+    ///
+    /// # Arguments
+    ///
+    /// * `iter` - The iterator to check.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `I` - The type of the iterator.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Self::Error`] if the capacity constraints are not met.
+    ///
+    /// # Panics
+    ///
+    /// May panic if the iterator's size hint is not valid.
+    fn check_if_can_fit<I>(&self, iter: &I) -> Result<(), Self::Error>
+    where
+        I: Iterator + ?Sized;
 }

@@ -1,7 +1,5 @@
-use crate::{
-    CapConstraint, MaxCap, MinCap,
-    err::{CapError, CapOverflow, CapUnderflow},
-};
+use crate::err::{CapError, CapOverflow, CapUnderflow};
+use crate::{CapConstraint, MaxCap, MinCap};
 
 /// A marker for a minimum capacity constraint.
 ///

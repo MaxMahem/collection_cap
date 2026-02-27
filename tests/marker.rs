@@ -1,7 +1,8 @@
 mod common;
 
+use collection_cap::CapConstraint;
+use collection_cap::cap::{ExactSize, MaxCapMarker, MinCapMarker, MinMaxCap};
 use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
-use collection_cap::{CapConstraint, ExactSize, MaxCapMarker, MinCapMarker, MinMaxCap};
 
 use common::consts::*;
 use common::{check_eq, panics};
