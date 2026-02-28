@@ -1,19 +1,16 @@
-use collection_cap::StaticCap;
-use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
+use collection_cap::IterCapExt;
+use collection_cap::err::CapError;
 
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
 
 type TestArray = [i32; CAP];
 
-const TARGET_OVERFLOW: CapOverflow<TestArray> = CapOverflow::new(CAP + 1);
-const TARGET_UNDERFLOW: CapUnderflow<TestArray> = CapUnderflow::new(CAP - 1);
+check_eq!(cap_constraint: COMPAT_ITER.ensure_compatible::<TestArray>() => Ok(()));
+check_eq!(cap_constraint_overflow: OVER_ITER.ensure_compatible::<TestArray>() 
+    => Err(CapError::Overflows(CAP_OVERFLOWS)));
+check_eq!(cap_constraint_underflow: UNDER_ITER.ensure_compatible::<TestArray>() 
+    => Err(CapError::Underflows(CAP_UNDERFLOWS)));
 
-check_eq!(cap_constraint: TestArray::check_compatability(&COMPAT_ITER) => Ok(()));
-check_eq!(cap_constraint_overflow: TestArray::check_compatability(&OVER_ITER) 
-    => Err(CapError::Overflow(TARGET_OVERFLOW)));
-check_eq!(cap_constraint_underflow: TestArray::check_compatability(&UNDER_ITER) 
-    => Err(CapError::Underflow(TARGET_UNDERFLOW)));
-
-panics!(bad_iter: TestArray::check_compatability(&INVALID_ITER) 
+panics!(bad_iter: INVALID_ITER.ensure_compatible::<TestArray>() 
     => "Invalid size hint");

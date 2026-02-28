@@ -12,21 +12,14 @@ This crate is `no_std` compatible and contains no `unsafe` code.
 
 ## Core Traits
 
-- **`MinCap`**: Defines a minimum capacity constraint.
-- **`MaxCap`**: Defines a maximum capacity constraint.
-- **`StaticCap`**: A trait for types that have a static, type-level capacity constraint, and can be used to validate that an iterator is compatible with that constraint.
+- **`StaticCap`**: A trait for types with a static, type-level capacity constraint. Declares a [`Cap`](StaticCap::Cap) type and a [`const CAP`](StaticCap::CAP) value that can check iterator compatibility.
 - **`VariableCap`**: A trait for types that have a dynamic or runtime capacity constraint, and can be used to validate that an iterator is compatible with that constraint.
 
 Implementations are provided for `Array` by default. See the [features](#features) section for more conditional enabled implementations.
 
-## Capacity Errors
+## Static Capacity
 
-### `CapError<C>`, `CapOverflow<C>`, `CapUnderflow<C>`
-
-These validate that an iterator's bounds are compatible with the static
-`C::MIN_CAP` and `C::MAX_CAP` constraints of a specific collection `C`.
-
-All implementations from this crate also implement `StaticCap` returning one of these error types, allowing them to be used via the iterator extension trait `IterCapExt`.
+Types that implement `StaticCap` (like arrays) can be checked using the `IterCapExt` extension trait:
 
 ```rust
 use collection_cap::IterCapExt;
@@ -45,9 +38,9 @@ let mut vec = ArrayVec::<i32, 10>::new();
 (0..11).ensure_compatible::<ArrayVec<i32, 10>>().expect_err("Should overflow");
 ```
 
-### `VariableCap`s using `VarCapError`, `Overflows`, `Underflows`
+## Variable Capacity
 
-These error types validate and report if an `Iterator` is compatible with a capacity constraint based on its `size_hint` and a runtime capacity constraint, `VariableCap`. This is particularly useful for validating that an iterator is compatible with the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
+The error types `VarCapError`, `Overflows`, and `Underflows` validate and report if an `Iterator` is compatible with a capacity constraint based on its `size_hint` and a runtime capacity constraint, `VariableCap`. This is particularly useful for validating that an iterator is compatible with the remaining capacity of a collection, and `IterCapExt` provides a convenient way to query this.
 
 ```rust
 use collection_cap::IterCapExt;
@@ -92,9 +85,9 @@ If these methods return an error, however, it guarantees that the iterator's
 
 In some cases, it may be useful to define a capacity constraint without a specific collection type. For example, validating that an iterator is compatible with a certain number of elements. For this, the crate provides `MinCapMarker`, `MaxCapMarker`, `MinMaxCap`, and `ExactSize` for type-level constraints, and `MinCapVal`, `MaxCapVal`, `MinMaxCapVal`, and `ExactCapVal` for runtime constraints.
 
-## Implmenting for local types
+## Implementing for local types
 
-Implementing `StaticCap` or `VariableCap` for local types is straightforward. If the type has a known static capacity when empty, implement `MinCap` and/or `MaxCap` as appropriate, and `StaticCap`. If the type's capacity is mutable at runtime, implement `VariableCap`.
+Implementing `StaticCap` or `VariableCap` for local types is straightforward. If the type has a known static capacity when empty, implement `StaticCap` with the appropriate `Cap` type and `const CAP` value. If the type's capacity is mutable at runtime, implement `VariableCap`.
 
 ## Installation
 

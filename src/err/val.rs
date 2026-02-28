@@ -1,8 +1,4 @@
-use tap::{Conv, Pipe};
-
 use crate::cap::{MaxCapVal, MinCapVal};
-use crate::err::{CapError, CapOverflow, CapUnderflow};
-use crate::{MaxCap, MinCap};
 
 #[cfg(doc)]
 use crate::VariableCap;
@@ -11,7 +7,7 @@ use crate::VariableCap;
 ///
 /// See [`crate::VariableCap#note-on-compatibility`] for details.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
-pub enum VarCapError {
+pub enum CapError {
     /// The minimum number of elements the iterator will produce is greater
     /// than the maximum number of elements that the capacity allows.
     #[error(transparent)]
@@ -21,27 +17,6 @@ pub enum VarCapError {
     /// the minimum number of elements the capacity requires.
     #[error(transparent)]
     Underflows(#[from] Underflows),
-}
-
-impl<C: MaxCap + ?Sized> From<CapOverflow<C>> for VarCapError {
-    fn from(value: CapOverflow<C>) -> Self {
-        value.conv::<Overflows>().pipe(Self::Overflows)
-    }
-}
-
-impl<C: MinCap + ?Sized> From<CapUnderflow<C>> for VarCapError {
-    fn from(value: CapUnderflow<C>) -> Self {
-        value.conv::<Underflows>().pipe(Self::Underflows)
-    }
-}
-
-impl<C: MaxCap + MinCap + ?Sized> From<CapError<C>> for VarCapError {
-    fn from(value: CapError<C>) -> Self {
-        match value {
-            CapError::Overflow(overflow) => overflow.conv::<Overflows>().pipe(Self::Overflows),
-            CapError::Underflow(underflow) => underflow.conv::<Underflows>().pipe(Self::Underflows),
-        }
-    }
 }
 
 /// A overflow violation of a [`VariableCap`] indicating that the minimum
@@ -85,7 +60,7 @@ impl Overflows {
         }
     }
 
-    /// Creates a new [`Overflows`] from the violating [`MaxCapVal`].
+    /// Internal unchecked constructor.
     #[must_use]
     pub(crate) const fn from_cap(min_size: usize, cap: MaxCapVal) -> Self {
         Self { min_size, max_cap: cap }
@@ -101,12 +76,6 @@ impl Overflows {
     #[must_use]
     pub const fn max_cap(&self) -> MaxCapVal {
         self.max_cap
-    }
-}
-
-impl<C: MaxCap + ?Sized> From<CapOverflow<C>> for Overflows {
-    fn from(err: CapOverflow<C>) -> Self {
-        Self { min_size: err.min_size(), max_cap: C::MAX_CAP }
     }
 }
 
@@ -167,11 +136,5 @@ impl Underflows {
     #[must_use]
     pub const fn min_cap(&self) -> MinCapVal {
         self.min_cap
-    }
-}
-
-impl<C: MinCap + ?Sized> From<CapUnderflow<C>> for Underflows {
-    fn from(err: CapUnderflow<C>) -> Self {
-        Self { max_size: err.max_size(), min_cap: C::MIN_CAP }
     }
 }

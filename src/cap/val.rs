@@ -5,8 +5,9 @@ use fluent_result::into::IntoResult;
 use size_hinter::{InvalidSizeHint, SizeHint};
 use tap::TryConv;
 
-use crate::err::{Overflows, Underflows, VarCapError};
-use crate::{INVALID_SIZE_HINT_MSG, VariableCap};
+use crate::INVALID_SIZE_HINT_MSG;
+use crate::VariableCap;
+use crate::err::{CapError, Overflows, Underflows};
 
 /// A runtime constraint specifying a maximum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
@@ -128,14 +129,14 @@ impl PartialEq<ExactCapVal> for MinMaxCapVal {
 }
 
 impl VariableCap for MinMaxCapVal {
-    type Error = VarCapError;
+    type Error = CapError;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        self.min.check_compatability(iter).map_err(VarCapError::Underflows)?;
-        self.max.check_compatability(iter).map_err(VarCapError::Overflows)
+        self.min.check_compatability(iter).map_err(CapError::Underflows)?;
+        self.max.check_compatability(iter).map_err(CapError::Overflows)
     }
 }
 
@@ -150,7 +151,7 @@ impl From<ExactCapVal> for MinMaxCapVal {
 pub struct ExactCapVal(pub usize);
 
 impl VariableCap for ExactCapVal {
-    type Error = VarCapError;
+    type Error = CapError;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where

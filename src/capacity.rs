@@ -1,22 +1,4 @@
-use crate::cap::{MaxCapVal, MinCapVal};
-
-/// A minimum capacity constraint.
-pub trait MinCap {
-    /// The minimum possible size.
-    const MIN_CAP: MinCapVal;
-}
-
-/// A maximum capacity constraint.
-pub trait MaxCap {
-    /// The maximum possible size.
-    const MAX_CAP: MaxCapVal;
-}
-
-/// A type with an associated static capacity constraints.
-///
-/// This trait is separate from the [`MinCap`] and [`MaxCap`] traits because a
-/// type may implement both, and this trait can be used to determine how it
-/// errors.
+/// A type with an associated static capacity constraint.
 ///
 /// # Note on Compatibility
 ///
@@ -29,29 +11,11 @@ pub trait MaxCap {
 /// See [`Iterator::size_hint`] for more details on how these bounds are
 /// calculated.
 pub trait StaticCap {
-    /// The actual target error type returned if the constraint is violated.
-    type Error;
+    /// The type of the capacity constraint value.
+    type Cap: VariableCap;
 
-    /// Checks if the given iterator is compatible with the capacity constraint.
-    ///
-    /// # Arguments
-    ///
-    /// * `iter` - The iterator to check.
-    ///
-    /// # Type Parameters
-    ///
-    /// * `I` - The type of the iterator.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Self::Error`] if the capacity constraints are not met.
-    ///
-    /// # Panics
-    ///
-    /// May panic if the iterator's size hint is not valid.
-    fn check_compatability<I>(iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized;
+    /// The static capacity constraint.
+    const CAP: Self::Cap;
 }
 
 /// A variable capacity constraint that is defined at runtime.

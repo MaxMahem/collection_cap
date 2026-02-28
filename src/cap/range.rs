@@ -2,7 +2,7 @@ use core::convert::Infallible;
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
-use crate::err::{Overflows, Underflows, VarCapError};
+use crate::err::{Overflows, Underflows, CapError};
 use crate::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG, VariableCap};
 
 impl VariableCap for RangeTo<usize> {
@@ -50,7 +50,7 @@ impl VariableCap for RangeFrom<usize> {
 }
 
 impl VariableCap for Range<usize> {
-    type Error = VarCapError;
+    type Error = CapError;
 
     /// Checks if the given iterator is compatible with the range.
     ///
@@ -72,7 +72,7 @@ impl VariableCap for Range<usize> {
 }
 
 impl VariableCap for RangeInclusive<usize> {
-    type Error = VarCapError;
+    type Error = CapError;
 
     /// Checks if the iterator is compatible with the inclusive range.
     ///

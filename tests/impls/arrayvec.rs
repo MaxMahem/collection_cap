@@ -1,5 +1,4 @@
-use collection_cap::StaticCap;
-use collection_cap::err::CapOverflow;
+use collection_cap::IterCapExt;
 
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
@@ -8,11 +7,9 @@ use arrayvec::ArrayVec;
 
 type TestArrayVec = ArrayVec<i32, CAP>;
 
-const TARGET_OVERFLOW: CapOverflow<TestArrayVec> = CapOverflow::new(CAP + 1);
+check_eq!(cap_constraint: COMPAT_ITER.ensure_compatible::<TestArrayVec>() => Ok(()));
+check_eq!(cap_constraint_overflow: OVER_ITER.ensure_compatible::<TestArrayVec>() 
+    => Err(CAP_OVERFLOWS));
 
-check_eq!(cap_constraint: TestArrayVec::check_compatability(&COMPAT_ITER) => Ok(()));
-check_eq!(cap_constraint_overflow: TestArrayVec::check_compatability(&OVER_ITER) 
-    => Err(TARGET_OVERFLOW));
-
-panics!(bad_iter: TestArrayVec::check_compatability(&INVALID_ITER) 
+panics!(bad_iter: INVALID_ITER.ensure_compatible::<TestArrayVec>()
     => "Invalid size hint");

@@ -86,15 +86,15 @@ mod min_max_cap_val {
         check_eq!(compatible: MIN_MAX_CAP.check_compatability(&COMPAT_ITER)
             => Ok(()));
         check_eq!(overflow: MIN_MAX_CAP.check_compatability(&OVER_ITER)
-            => Err(COMPAT_ERROR_OVERFLOWS));
+            => Err(CAP_ERROR_OVERFLOW));
         check_eq!(underflow: MIN_MAX_CAP.check_compatability(&UNDER_ITER)
-            => Err(COMPAT_ERROR_UNDERFLOWS));
+            => Err(CAP_ERROR_UNDERFLOW));
 
         panics!(bad_iter: MIN_MAX_CAP.check_compatability(&INVALID_ITER)
             => "Invalid size hint");
 
         panics!(invalid_range: MinMaxCapVal::new(CAP, CAP - 1)
-            => "invalid range (start > end)");
+            => "Invalid range (start > end)");
     }
 }
 
@@ -116,9 +116,9 @@ mod exact {
 
         check_eq!(compatible: EXACT_CAP.check_compatability(&COMPAT_ITER) => Ok(()));
         check_eq!(overflow: EXACT_CAP.check_compatability(&OVER_ITER)
-            => Err(COMPAT_ERROR_OVERFLOWS));
+            => Err(CAP_ERROR_OVERFLOW));
         check_eq!(underflow: EXACT_CAP.check_compatability(&UNDER_ITER)
-            => Err(COMPAT_ERROR_UNDERFLOWS));
+            => Err(CAP_ERROR_UNDERFLOW));
 
         panics!(bad_iter: EXACT_CAP.check_compatability(&INVALID_ITER)
             => "Invalid size hint");

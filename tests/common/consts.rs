@@ -3,7 +3,7 @@
 use std::ops::Range;
 
 use collection_cap::cap::{MaxCapVal, MinCapVal};
-use collection_cap::err::{Overflows, Underflows, VarCapError};
+use collection_cap::err::{CapError, Overflows, Underflows};
 use size_hinter::InvalidIterator;
 
 pub const CAP: usize = 10;
@@ -19,7 +19,7 @@ pub const MIN_CAP: MinCapVal = MinCapVal(CAP);
 
 pub const CAP_OVERFLOWS: Overflows = Overflows::new(OVER_CAP, MAX_CAP);
 pub const CAP_UNDERFLOWS: Underflows = Underflows::new(UNDER_CAP, MIN_CAP);
-pub const COMPAT_ERROR_OVERFLOWS: VarCapError = VarCapError::Overflows(CAP_OVERFLOWS);
-pub const COMPAT_ERROR_UNDERFLOWS: VarCapError = VarCapError::Underflows(CAP_UNDERFLOWS);
+pub const CAP_ERROR_OVERFLOW: CapError = CapError::Overflows(CAP_OVERFLOWS);
+pub const CAP_ERROR_UNDERFLOW: CapError = CapError::Underflows(CAP_UNDERFLOWS);
 
 pub const INVALID_ITER: InvalidIterator<i32> = InvalidIterator::DEFAULT;

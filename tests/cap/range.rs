@@ -15,7 +15,7 @@ mod range_to {
             => Err(CAP_OVERFLOWS));
 
     panics!(empty: EMPTY_RANGE.check_compatability(&COMPAT_ITER)
-            => "capacity constraint range must not be empty");
+            => "Range must not be empty");
 }
 
 mod range_to_inclusive {
@@ -47,15 +47,15 @@ mod range_open {
 
     check_eq!(compatible: CAP_RANGE.check_compatability(&COMPAT_ITER) => Ok(()));
     check_eq!(overflow: CAP_RANGE.check_compatability(&OVER_ITER)
-            => Err(COMPAT_ERROR_OVERFLOWS));
+            => Err(CAP_ERROR_OVERFLOW));
     check_eq!(underflow: CAP_RANGE.check_compatability(&UNDER_ITER)
-            => Err(COMPAT_ERROR_UNDERFLOWS));
+            => Err(CAP_ERROR_UNDERFLOW));
 
     panics!(empty: EMPTY_RANGE.check_compatability(&COMPAT_ITER)
-            => "range must not be empty");
+            => "Range must not be empty");
 
     panics!(invalid: INVALID_RANGE.check_compatability(&COMPAT_ITER)
-            => "invalid range (start > end)");
+            => "Invalid range (start > end)");
 }
 
 mod range_inclusive {
@@ -66,12 +66,12 @@ mod range_inclusive {
 
     check_eq!(compatible: CAP_RANGE.check_compatability(&COMPAT_ITER) => Ok(()));
     check_eq!(overflow: CAP_RANGE.check_compatability(&OVER_ITER)
-            => Err(COMPAT_ERROR_OVERFLOWS));
+            => Err(CAP_ERROR_OVERFLOW));
     check_eq!(underflow: CAP_RANGE.check_compatability(&UNDER_ITER)
-            => Err(COMPAT_ERROR_UNDERFLOWS));
+            => Err(CAP_ERROR_UNDERFLOW));
 
     panics!(invalid: INVALID_RANGE.check_compatability(&COMPAT_ITER)
-            => "invalid range (start > end)");
+            => "Invalid range (start > end)");
 }
 
 mod range_full {
