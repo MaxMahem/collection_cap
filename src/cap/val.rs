@@ -5,15 +5,15 @@ use fluent_result::into::IntoResult;
 use size_hinter::{InvalidSizeHint, SizeHint};
 use tap::TryConv;
 
+use crate::Capacity;
 use crate::INVALID_SIZE_HINT_MSG;
-use crate::VariableCap;
 use crate::err::{CapError, Overflows, Underflows};
 
 /// A runtime constraint specifying a maximum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
 pub struct MaxCapVal(pub usize);
 
-impl VariableCap for MaxCapVal {
+impl Capacity for MaxCapVal {
     type Error = Overflows;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -47,7 +47,7 @@ impl RangeBounds<usize> for MaxCapVal {
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
 pub struct MinCapVal(pub usize);
 
-impl VariableCap for MinCapVal {
+impl Capacity for MinCapVal {
     type Error = Underflows;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -128,7 +128,7 @@ impl PartialEq<ExactCapVal> for MinMaxCapVal {
     }
 }
 
-impl VariableCap for MinMaxCapVal {
+impl Capacity for MinMaxCapVal {
     type Error = CapError;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -150,7 +150,7 @@ impl From<ExactCapVal> for MinMaxCapVal {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, From, Into, Display)]
 pub struct ExactCapVal(pub usize);
 
-impl VariableCap for ExactCapVal {
+impl Capacity for ExactCapVal {
     type Error = CapError;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>

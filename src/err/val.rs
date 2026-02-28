@@ -1,11 +1,11 @@
 use crate::cap::{MaxCapVal, MinCapVal};
 
 #[cfg(doc)]
-use crate::VariableCap;
+use crate::Capacity;
 
-/// A violation of a [`VariableCap`].
+/// A violation of a [`Capacity`].
 ///
-/// See [`crate::VariableCap#note-on-compatibility`] for details.
+/// See [`crate::Capacity#note-on-compatibility`] for details.
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum CapError {
     /// The minimum number of elements the iterator will produce is greater
@@ -19,7 +19,7 @@ pub enum CapError {
     Underflows(#[from] Underflows),
 }
 
-/// A overflow violation of a [`VariableCap`] indicating that the minimum
+/// A overflow violation of a [`Capacity`] indicating that the minimum
 /// number of elements an [`Iterator`] produces is greater than the maximum
 /// capacity.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
@@ -79,7 +79,7 @@ impl Overflows {
     }
 }
 
-/// A violation of a [`VariableCap`] indicating that an iterator produces
+/// A violation of a [`Capacity`] indicating that an iterator produces
 /// fewer elements than the minimum required capacity.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("Capacity underflow: max iterator size {max_size} < min capacity {min_cap}")]

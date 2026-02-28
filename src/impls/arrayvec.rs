@@ -3,9 +3,9 @@ use tap::Pipe;
 
 use crate::cap::MaxCapVal;
 use crate::err::Overflows;
-use crate::{StaticCap, VariableCap};
+use crate::{StaticCap, Capacity};
 
-impl<T, const N: usize> VariableCap for ArrayVec<T, N> {
+impl<T, const N: usize> Capacity for ArrayVec<T, N> {
     type Error = Overflows;
 
     fn check_compatability<I: Iterator + ?Sized>(&self, iter: &I) -> Result<(), Self::Error> {

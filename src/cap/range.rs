@@ -2,10 +2,10 @@ use core::convert::Infallible;
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
-use crate::err::{Overflows, Underflows, CapError};
-use crate::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG, VariableCap};
+use crate::err::{CapError, Overflows, Underflows};
+use crate::{Capacity, EMPTY_RANGE_MSG, INVALID_RANGE_MSG};
 
-impl VariableCap for RangeTo<usize> {
+impl Capacity for RangeTo<usize> {
     type Error = Overflows;
 
     /// Checks if the given iterator is compatible with the range.
@@ -27,7 +27,7 @@ impl VariableCap for RangeTo<usize> {
     }
 }
 
-impl VariableCap for RangeToInclusive<usize> {
+impl Capacity for RangeToInclusive<usize> {
     type Error = Overflows;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -38,7 +38,7 @@ impl VariableCap for RangeToInclusive<usize> {
     }
 }
 
-impl VariableCap for RangeFrom<usize> {
+impl Capacity for RangeFrom<usize> {
     type Error = Underflows;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -49,7 +49,7 @@ impl VariableCap for RangeFrom<usize> {
     }
 }
 
-impl VariableCap for Range<usize> {
+impl Capacity for Range<usize> {
     type Error = CapError;
 
     /// Checks if the given iterator is compatible with the range.
@@ -71,7 +71,7 @@ impl VariableCap for Range<usize> {
     }
 }
 
-impl VariableCap for RangeInclusive<usize> {
+impl Capacity for RangeInclusive<usize> {
     type Error = CapError;
 
     /// Checks if the iterator is compatible with the inclusive range.
@@ -90,7 +90,7 @@ impl VariableCap for RangeInclusive<usize> {
     }
 }
 
-impl VariableCap for RangeFull {
+impl Capacity for RangeFull {
     type Error = Infallible;
 
     /// Always returns `Ok(())` because [`RangeFull`] declares an open-ended

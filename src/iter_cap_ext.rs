@@ -1,4 +1,4 @@
-use crate::{StaticCap, VariableCap};
+use crate::{Capacity, StaticCap};
 
 /// An extension trait for `Iterator` to check if the iterator is compatible with
 /// capacity constraints.
@@ -14,7 +14,7 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// [`C::Cap::Error`](VariableCap::Error) if the iterator
+    /// [`C::Cap::Error`](Capacity::Error) if the iterator
     /// is not compatible with the capacity constraints.
     ///
     /// # Panics
@@ -29,7 +29,7 @@ pub trait IterCapExt {
     /// (0..11).ensure_compatible::<[i32; 10]>().expect_err("Should overflow");
     /// (0..9).ensure_compatible::<[i32; 10]>().expect_err("Should underflow");
     /// ```
-    fn ensure_compatible<C>(&self) -> Result<(), <C::Cap as VariableCap>::Error>
+    fn ensure_compatible<C>(&self) -> Result<(), <C::Cap as Capacity>::Error>
     where
         Self: Iterator,
         C: StaticCap + ?Sized,
@@ -40,7 +40,7 @@ pub trait IterCapExt {
     /// Ensures that this iterator is not incompatible with the current capacity
     /// of `cap`.
     ///
-    /// See [`VariableCap#note-on-compatibility`] for details.
+    /// See [`Capacity#note-on-compatibility`] for details.
     ///
     /// # Arguments
     ///
@@ -52,7 +52,7 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// [`CAP::Error`](VariableCap::Error) if the iterator is not compatible
+    /// [`CAP::Error`](Capacity::Error) if the iterator is not compatible
     /// with the capacity constraints.
     ///
     /// # Panics
@@ -77,7 +77,7 @@ pub trait IterCapExt {
     fn ensure_compatible_with<CAP>(&self, cap: CAP) -> Result<(), CAP::Error>
     where
         Self: Iterator,
-        CAP: VariableCap,
+        CAP: Capacity,
     {
         cap.check_compatability(self)
     }

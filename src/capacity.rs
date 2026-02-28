@@ -12,7 +12,7 @@
 /// calculated.
 pub trait StaticCap {
     /// The type of the capacity constraint value.
-    type Cap: VariableCap;
+    type Cap: Capacity;
 
     /// The static capacity constraint.
     const CAP: Self::Cap;
@@ -30,7 +30,7 @@ pub trait StaticCap {
 ///
 /// See [`Iterator::size_hint`] for more details on how these bounds are
 /// calculated.
-pub trait VariableCap {
+pub trait Capacity {
     /// The error type returned if the constraint is violated.
     type Error;
 
@@ -56,7 +56,7 @@ pub trait VariableCap {
         I: Iterator + ?Sized;
 }
 
-impl<CAP: VariableCap + ?Sized> VariableCap for &CAP {
+impl<CAP: Capacity + ?Sized> Capacity for &CAP {
     type Error = CAP::Error;
 
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>

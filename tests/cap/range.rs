@@ -2,7 +2,7 @@ use std::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
 
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
-use collection_cap::VariableCap;
+use collection_cap::Capacity;
 
 mod range_to {
     use super::*;

@@ -1,7 +1,7 @@
 use core::ops::Bound::*;
 use core::ops::RangeBounds;
 
-use collection_cap::VariableCap;
+use collection_cap::Capacity;
 use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal};
 
 use crate::common::consts::*;

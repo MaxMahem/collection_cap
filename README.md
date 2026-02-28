@@ -87,7 +87,7 @@ In some cases, it may be useful to define a capacity constraint without a specif
 
 ## Implementing for local types
 
-Implementing `StaticCap` or `VariableCap` for local types is straightforward. If the type has a known static capacity when empty, implement `StaticCap` with the appropriate `Cap` type and `const CAP` value. If the type's capacity is mutable at runtime, implement `VariableCap`.
+Using the traits for local types is straightforward. If the type has a known static capacity when empty, implement `StaticCap` using one of the appropriate `Capacity` types and `const CAP` value. If the type's capacity is mutable at runtime, implement `VariableCap`.
 
 ## Installation
 
@@ -95,4 +95,4 @@ It's on crates.io: [collection_cap](https://crates.io/crates/collection_cap)
 
 ### Features
 
-- `arrayvec`: Implements `MaxCap` and `VariableCap` for `ArrayVec`.
+- `arrayvec`: Implements `StaticCap` and `VariableCap` for `ArrayVec`.
