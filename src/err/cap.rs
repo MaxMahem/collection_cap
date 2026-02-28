@@ -1,12 +1,15 @@
 use core::marker::PhantomData;
+use core::ops::{Not, RangeBounds};
 
 use fluent_result::bool::Then;
 use size_hinter::SizeHint;
 
+use crate::INVALID_SIZE_HINT_MSG;
+use crate::cap::{MaxCapVal, MinCapVal};
 use crate::{MaxCap, MinCap};
 
 macro_rules! invalid_size_hint {
-    () => {{ |_| panic!("Invalid size hint") }};
+    () => {{ |_| panic!("{INVALID_SIZE_HINT_MSG}") }};
 }
 
 /// Represents a violation of `CAP`'s capacity constraint.
@@ -65,15 +68,16 @@ impl<CAP: MinCap + MaxCap + ?Sized> CapError<CAP> {
     /// # use collection_cap::err::{CapError, CapOverflow, CapUnderflow};
     /// CapError::<[i32; 10]>::ensure_compatible(&(0..10)).expect("Should be compatible");
     ///
-    /// let err = CapError::<[i32; 10]>::ensure_compatible(&(0..25))
+    /// CapError::<[i32; 10]>::ensure_compatible(&(0..11))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, CapError::Overflow(CapOverflow::new(25)));
     ///
-    /// let err = CapError::<[i32; 10]>::ensure_compatible(&(0..0))
+    /// CapError::<[i32; 10]>::ensure_compatible(&(0..9))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, CapError::Underflow(CapUnderflow::new(0)));
     /// ```
-    pub fn ensure_compatible<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
+    pub fn ensure_compatible<I>(iter: &I) -> Result<(), Self>
+    where
+        I: Iterator + ?Sized,
+    {
         iter.size_hint() //
             .try_into()
             .map_or_else(invalid_size_hint!(), Self::ensure_hint_compatible)
@@ -97,7 +101,12 @@ pub struct CapOverflow<CAP: MaxCap + ?Sized> {
 
 impl<CAP: MaxCap + ?Sized> CapOverflow<CAP> {
     /// The maximum capacity of the target collection.
-    pub const MAX_CAP: usize = CAP::MAX_CAP;
+    pub const MAX_CAP: MaxCapVal = CAP::MAX_CAP;
+
+    #[must_use]
+    const fn new_unchecked(min_size: usize) -> Self {
+        Self { min_size, _marker: PhantomData }
+    }
 
     /// Creates a new [`CapOverflow`] based on `min_size`.
     ///
@@ -118,13 +127,13 @@ impl<CAP: MaxCap + ?Sized> CapOverflow<CAP> {
     /// ```
     #[must_use]
     pub const fn new(min_size: usize) -> Self {
-        match min_size > CAP::MAX_CAP {
-            true => Self { min_size, _marker: PhantomData },
+        match min_size > CAP::MAX_CAP.0 {
+            true => Self::new_unchecked(min_size),
             false => panic!("min_size must be > MAX_CAP"),
         }
     }
 
-    /// Returns the minimum number of elements the iterator produces.
+    /// The minimum number of elements the iterator produces.
     #[must_use]
     pub const fn min_size(&self) -> usize {
         self.min_size
@@ -132,7 +141,7 @@ impl<CAP: MaxCap + ?Sized> CapOverflow<CAP> {
 
     fn ensure_hint_compatible(hint: SizeHint) -> Result<(), Self> {
         let min_size = hint.lower();
-        (min_size > CAP::MAX_CAP).then_err(Self { min_size, _marker: PhantomData })
+        CAP::MAX_CAP.contains(&min_size).not().then_err(Self::new_unchecked(min_size))
     }
 
     /// Ensures that the minimum number of elements `iter` produces does not
@@ -159,13 +168,16 @@ impl<CAP: MaxCap + ?Sized> CapOverflow<CAP> {
     ///
     /// ```rust
     /// # use collection_cap::err::CapOverflow;
-    /// CapOverflow::<[i32; 20]>::ensure_compatible(&(0..15)).expect("Should be compatible");
+    /// CapOverflow::<[i32; 20]>::ensure_compatible(&(0..15))
+    ///     .expect("Should be compatible");
     ///
-    /// let err = CapOverflow::<[i32; 20]>::ensure_compatible(&(0..25))
+    /// CapOverflow::<[i32; 20]>::ensure_compatible(&(0..25))
     ///     .expect_err("Should overflow");
-    /// assert_eq!(err, CapOverflow::new(25));
     /// ```
-    pub fn ensure_compatible<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
+    pub fn ensure_compatible<I>(iter: &I) -> Result<(), Self>
+    where
+        I: Iterator + ?Sized,
+    {
         iter.size_hint() //
             .try_into()
             .map_or_else(invalid_size_hint!(), Self::ensure_hint_compatible)
@@ -189,7 +201,12 @@ pub struct CapUnderflow<CAP: MinCap + ?Sized> {
 
 impl<CAP: MinCap + ?Sized> CapUnderflow<CAP> {
     /// The minimum capacity of the target collection.
-    pub const MIN_CAP: usize = CAP::MIN_CAP;
+    pub const MIN_CAP: MinCapVal = CAP::MIN_CAP;
+
+    #[must_use]
+    const fn new_unchecked(max_size: usize) -> Self {
+        Self { max_size, _marker: PhantomData }
+    }
 
     /// Creates a new [`CapUnderflow`] based on `max_size`.
     ///
@@ -210,22 +227,22 @@ impl<CAP: MinCap + ?Sized> CapUnderflow<CAP> {
     /// ```
     #[must_use]
     pub const fn new(max_size: usize) -> Self {
-        match max_size < CAP::MIN_CAP {
-            true => Self { max_size, _marker: PhantomData },
+        match max_size < CAP::MIN_CAP.0 {
+            true => Self::new_unchecked(max_size),
             false => panic!("max_size must be < MIN_CAP"),
         }
     }
 
-    /// Returns the maximum number of elements the iterator produces.
+    /// T5he maximum number of elements the iterator produces.
     #[must_use]
     pub const fn max_size(&self) -> usize {
         self.max_size
     }
 
     fn ensure_hint_compatible(hint: SizeHint) -> Result<(), Self> {
-        hint.upper()
-            .filter(|&max_size| max_size < CAP::MIN_CAP)
-            .map(|max_size| Self { max_size, _marker: PhantomData })
+        hint.upper() //
+            .filter(|&max_size| !CAP::MIN_CAP.contains(&max_size))
+            .map(Self::new_unchecked)
             .map_or(Ok(()), Err)
     }
 
@@ -249,13 +266,16 @@ impl<CAP: MinCap + ?Sized> CapUnderflow<CAP> {
     ///
     /// ```rust
     /// # use collection_cap::err::CapUnderflow;
-    /// CapUnderflow::<[i32; 15]>::ensure_compatible(&(0..15)).expect("Should be compatible");
+    /// CapUnderflow::<[i32; 15]>::ensure_compatible(&(0..15))
+    ///     .expect("Should be compatible");
     ///
-    /// let err = CapUnderflow::<[i32; 20]>::ensure_compatible(&(0..5))
+    /// CapUnderflow::<[i32; 20]>::ensure_compatible(&(0..5))
     ///     .expect_err("Should underflow");
-    /// assert_eq!(err, CapUnderflow::new(5));
     /// ```
-    pub fn ensure_compatible<I: Iterator + ?Sized>(iter: &I) -> Result<(), Self> {
+    pub fn ensure_compatible<I>(iter: &I) -> Result<(), Self>
+    where
+        I: Iterator + ?Sized,
+    {
         iter.size_hint() //
             .try_into()
             .map_or_else(invalid_size_hint!(), Self::ensure_hint_compatible)

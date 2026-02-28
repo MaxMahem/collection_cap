@@ -1,5 +1,11 @@
+use tap::{Conv, Pipe};
+
+use crate::cap::{MaxCapVal, MinCapVal};
 use crate::err::{CapError, CapOverflow, CapUnderflow};
-use crate::{MaxCap, MinCap, VariableCap};
+use crate::{MaxCap, MinCap};
+
+#[cfg(doc)]
+use crate::VariableCap;
 
 /// A violation of a [`VariableCap`].
 ///
@@ -19,21 +25,21 @@ pub enum VarCapError {
 
 impl<C: MaxCap + ?Sized> From<CapOverflow<C>> for VarCapError {
     fn from(value: CapOverflow<C>) -> Self {
-        Self::Overflows(value.into())
+        value.conv::<Overflows>().pipe(Self::Overflows)
     }
 }
 
 impl<C: MinCap + ?Sized> From<CapUnderflow<C>> for VarCapError {
     fn from(value: CapUnderflow<C>) -> Self {
-        Self::Underflows(value.into())
+        value.conv::<Underflows>().pipe(Self::Underflows)
     }
 }
 
 impl<C: MaxCap + MinCap + ?Sized> From<CapError<C>> for VarCapError {
     fn from(value: CapError<C>) -> Self {
         match value {
-            CapError::Overflow(overflow) => Self::Overflows(overflow.into()),
-            CapError::Underflow(underflow) => Self::Underflows(underflow.into()),
+            CapError::Overflow(overflow) => overflow.conv::<Overflows>().pipe(Self::Overflows),
+            CapError::Underflow(underflow) => underflow.conv::<Underflows>().pipe(Self::Underflows),
         }
     }
 }
@@ -47,7 +53,7 @@ pub struct Overflows {
     /// The minimum number of elements produced.
     min_size: usize,
     /// The maximum capacity of the collection.
-    max_cap: usize,
+    max_cap: MaxCapVal,
 }
 
 impl Overflows {
@@ -60,33 +66,40 @@ impl Overflows {
     ///
     /// # Panics
     ///
-    /// Panics if `min_size` > `max_cap`.
+    /// Panics if `min_size` <= `max_cap`.
     ///
     /// # Examples
     ///
     /// ```rust
     /// # use collection_cap::err::Overflows;
-    /// let err = Overflows::new(10, 5);
+    /// # use collection_cap::cap::MaxCapVal;
+    /// let err = Overflows::new(10, MaxCapVal(5));
     /// assert_eq!(err.min_size(), 10);
-    /// assert_eq!(err.max_cap(), 5);
+    /// assert_eq!(err.max_cap(), MaxCapVal(5));
     /// ```
     #[must_use]
-    pub const fn new(min_size: usize, max_cap: usize) -> Self {
-        match min_size > max_cap {
+    pub const fn new(min_size: usize, max_cap: MaxCapVal) -> Self {
+        match min_size > max_cap.0 {
             true => Self { min_size, max_cap },
             false => panic!("min_size must be > max_cap"),
         }
     }
 
-    /// The minimum number of elements the [`Iterator`] can produce.
+    /// Creates a new [`Overflows`] from the violating [`MaxCapVal`].
+    #[must_use]
+    pub(crate) const fn from_cap(min_size: usize, cap: MaxCapVal) -> Self {
+        Self { min_size, max_cap: cap }
+    }
+
+    /// The minimum number of elements the [`Iterator`] produces.
     #[must_use]
     pub const fn min_size(&self) -> usize {
         self.min_size
     }
 
-    /// The maximum number of elements the capacity constraint allows.
+    /// The violated max capacity constraint.
     #[must_use]
-    pub const fn max_cap(&self) -> usize {
+    pub const fn max_cap(&self) -> MaxCapVal {
         self.max_cap
     }
 }
@@ -105,7 +118,7 @@ pub struct Underflows {
     /// The maximum number of elements produced.
     max_size: usize,
     /// The minimum capacity of the collection.
-    min_cap: usize,
+    min_cap: MinCapVal,
 }
 
 impl Underflows {
@@ -119,33 +132,40 @@ impl Underflows {
     ///
     /// # Panics
     ///
-    /// Panics if `max_size` is greater than `min_cap`.
+    /// Panics if `max_size` is >= `min_cap`.
     ///
     /// # Examples
     ///
     /// ```rust
     /// # use collection_cap::err::Underflows;
-    /// let err = Underflows::new(5, 10);
+    /// # use collection_cap::cap::MinCapVal;
+    /// let err = Underflows::new(5, MinCapVal(10));
     /// assert_eq!(err.max_size(), 5);
-    /// assert_eq!(err.min_cap(), 10);
+    /// assert_eq!(err.min_cap(), MinCapVal(10));
     /// ```
     #[must_use]
-    pub const fn new(max_size: usize, min_cap: usize) -> Self {
-        match max_size < min_cap {
+    pub const fn new(max_size: usize, min_cap: MinCapVal) -> Self {
+        match max_size < min_cap.0 {
             true => Self { max_size, min_cap },
             false => panic!("max_size must be < min_cap"),
         }
     }
 
-    /// The maximum number of elements produced.
+    /// Creates a new [`Underflows`] from the violating [`MinCapVal`].
+    #[must_use]
+    pub(crate) const fn from_cap(max_size: usize, cap: MinCapVal) -> Self {
+        Self { max_size, min_cap: cap }
+    }
+
+    /// The maximum number of elements the [`Iterator`] produces.
     #[must_use]
     pub const fn max_size(&self) -> usize {
         self.max_size
     }
 
-    /// The minimum capacity of the collection.
+    /// The violated min capacity constraint.
     #[must_use]
-    pub const fn min_cap(&self) -> usize {
+    pub const fn min_cap(&self) -> MinCapVal {
         self.min_cap
     }
 }

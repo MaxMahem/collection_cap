@@ -1,3 +1,4 @@
+use crate::cap::{MaxCapVal, MinCapVal};
 use crate::err::{CapError, CapOverflow, CapUnderflow};
 use crate::{MaxCap, MinCap, StaticCap};
 
@@ -10,7 +11,7 @@ use crate::{MaxCap, MinCap, StaticCap};
 pub struct MinCapMarker<const MIN: usize> {}
 
 impl<const MIN: usize> MinCap for MinCapMarker<MIN> {
-    const MIN_CAP: usize = MIN;
+    const MIN_CAP: MinCapVal = MinCapVal(MIN);
 }
 
 impl<const MIN: usize> StaticCap for MinCapMarker<MIN> {
@@ -30,7 +31,7 @@ impl<const MIN: usize> StaticCap for MinCapMarker<MIN> {
 pub struct MaxCapMarker<const MAX: usize> {}
 
 impl<const MAX: usize> MaxCap for MaxCapMarker<MAX> {
-    const MAX_CAP: usize = MAX;
+    const MAX_CAP: MaxCapVal = MaxCapVal(MAX);
 }
 
 impl<const MAX: usize> StaticCap for MaxCapMarker<MAX> {
@@ -53,11 +54,11 @@ impl<const MAX: usize> StaticCap for MaxCapMarker<MAX> {
 pub struct MinMaxCap<const MIN: usize, const MAX: usize> {}
 
 impl<const MIN: usize, const MAX: usize> MinCap for MinMaxCap<MIN, MAX> {
-    const MIN_CAP: usize = MIN;
+    const MIN_CAP: MinCapVal = MinCapVal(MIN);
 }
 
 impl<const MIN: usize, const MAX: usize> MaxCap for MinMaxCap<MIN, MAX> {
-    const MAX_CAP: usize = MAX;
+    const MAX_CAP: MaxCapVal = MaxCapVal(MAX);
 }
 
 impl<const MIN: usize, const MAX: usize> StaticCap for MinMaxCap<MIN, MAX> {
@@ -77,11 +78,11 @@ impl<const MIN: usize, const MAX: usize> StaticCap for MinMaxCap<MIN, MAX> {
 pub struct ExactSize<const SIZE: usize> {}
 
 impl<const SIZE: usize> MinCap for ExactSize<SIZE> {
-    const MIN_CAP: usize = SIZE;
+    const MIN_CAP: MinCapVal = MinCapVal(SIZE);
 }
 
 impl<const SIZE: usize> MaxCap for ExactSize<SIZE> {
-    const MAX_CAP: usize = SIZE;
+    const MAX_CAP: MaxCapVal = MaxCapVal(SIZE);
 }
 
 impl<const SIZE: usize> StaticCap for ExactSize<SIZE> {

@@ -1,20 +1,22 @@
+use crate::cap::{MaxCapVal, MinCapVal};
+
 /// A minimum capacity constraint.
 pub trait MinCap {
     /// The minimum possible size.
-    const MIN_CAP: usize;
+    const MIN_CAP: MinCapVal;
 }
 
 /// A maximum capacity constraint.
 pub trait MaxCap {
     /// The maximum possible size.
-    const MAX_CAP: usize;
+    const MAX_CAP: MaxCapVal;
 }
 
-/// A trait for static capacity constraints.
+/// A type with an associated static capacity constraints.
 ///
-/// This trait is separate from the other capacity traits because a type may
-/// implement multiple capacity constraints, and this trait can be used to
-/// determine how it errors.
+/// This trait is separate from the [`MinCap`] and [`MaxCap`] traits because a
+/// type may implement both, and this trait can be used to determine how it
+/// errors.
 ///
 /// # Note on Compatibility
 ///

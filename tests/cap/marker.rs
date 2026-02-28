@@ -15,7 +15,7 @@ mod min_cap_marker {
         check_eq!(underflow: MinCapMarker::<CAP>::check_compatability(&UNDER_ITER)
             => Err(CapUnderflow::new(CAP - 1)));
 
-        panics!(bad_iter: MinCapMarker::<CAP>::check_compatability(&INVALID_ITERATOR)
+        panics!(bad_iter: MinCapMarker::<CAP>::check_compatability(&INVALID_ITER)
             => "Invalid size hint");
     }
 }
@@ -30,7 +30,7 @@ mod max_cap_marker {
         check_eq!(overflow: MaxCapMarker::<CAP>::check_compatability(&OVER_ITER)
             => Err(CapOverflow::new(CAP + 1)));
 
-        panics!(bad_iter: MaxCapMarker::<CAP>::check_compatability(&INVALID_ITERATOR)
+        panics!(bad_iter: MaxCapMarker::<CAP>::check_compatability(&INVALID_ITER)
             => "Invalid size hint");
     }
 }
@@ -47,7 +47,7 @@ mod min_max_cap {
         check_eq!(underflow: MinMaxCap::<CAP, CAP>::check_compatability(&UNDER_ITER)
             => Err(CapError::Underflow(CapUnderflow::new(CAP - 1))));
 
-        panics!(bad_iter: MinMaxCap::<CAP, CAP>::check_compatability(&INVALID_ITERATOR)
+        panics!(bad_iter: MinMaxCap::<CAP, CAP>::check_compatability(&INVALID_ITER)
             => "Invalid size hint");
     }
 }
@@ -64,7 +64,7 @@ mod exact_size {
         check_eq!(underflow: ExactSize::<CAP>::check_compatability(&UNDER_ITER)
             => Err(CapError::Underflow(CapUnderflow::new(CAP - 1))));
 
-        panics!(bad_iter: ExactSize::<CAP>::check_compatability(&INVALID_ITERATOR)
+        panics!(bad_iter: ExactSize::<CAP>::check_compatability(&INVALID_ITER)
             => "Invalid size hint");
     }
 }

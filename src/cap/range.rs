@@ -1,9 +1,9 @@
 use core::convert::Infallible;
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
-use crate::VariableCap;
 use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
 use crate::err::{Overflows, Underflows, VarCapError};
+use crate::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG, VariableCap};
 
 impl VariableCap for RangeTo<usize> {
     type Error = Overflows;
@@ -12,14 +12,16 @@ impl VariableCap for RangeTo<usize> {
     ///
     /// # Panics
     ///
-    /// Panics if `self.end = 0` - range is empty
+    /// Panics if:
+    /// - `self.end = 0` - range is empty
+    /// - `iter`'s [size hint](Iterator::size_hint) is invalid.
     fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
         #[expect(clippy::option_if_let_else)]
         match usize::checked_sub(self.end, 1) {
-            None => panic!("capacity constraint range must not be empty"),
+            None => panic!("{EMPTY_RANGE_MSG}"),
             Some(end) => MaxCapVal(end).check_compatability(iter),
         }
     }
@@ -62,8 +64,8 @@ impl VariableCap for Range<usize> {
         I: Iterator + ?Sized,
     {
         match (self.start, self.end) {
-            (start, end) if start == end => panic!("range must not be empty"),
-            (start, end) if start > end => panic!("invalid range (start > end)"),
+            (start, end) if start == end => panic!("{EMPTY_RANGE_MSG}"),
+            (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
             (start, end) => MinMaxCapVal::new(start, end.saturating_sub(1)).check_compatability(iter),
         }
     }
@@ -82,7 +84,7 @@ impl VariableCap for RangeInclusive<usize> {
         I: Iterator + ?Sized,
     {
         match (self.start(), self.end()) {
-            (start, end) if start > end => panic!("invalid range (start > end)"),
+            (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
             (start, end) => MinMaxCapVal::new(*start, *end).check_compatability(iter),
         }
     }

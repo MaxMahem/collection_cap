@@ -20,7 +20,7 @@ mod cap_error {
         check_eq!(underflow: CapError::<FixedCap>::ensure_compatible(&UNDER_ITER) 
             => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
-        panics!(bad_iter: CapError::<FixedCap>::ensure_compatible(&INVALID_ITERATOR) 
+        panics!(bad_iter: CapError::<FixedCap>::ensure_compatible(&INVALID_ITER) 
             => "Invalid size hint");
     }
 }
@@ -39,7 +39,7 @@ mod cap_overflow {
         check_eq!(overflow: CapOverflow::<FixedCap>::ensure_compatible(&OVER_ITER) 
             => Err(TARGET_OVERFLOW));
 
-        panics!(bad_iter: CapOverflow::<FixedCap>::ensure_compatible(&INVALID_ITERATOR) 
+        panics!(bad_iter: CapOverflow::<FixedCap>::ensure_compatible(&INVALID_ITER) 
             => "Invalid size hint");
     }
 }
@@ -58,7 +58,7 @@ mod cap_underflow {
         check_eq!(underflow: CapUnderflow::<FixedCap>::ensure_compatible(&UNDER_ITER) 
             => Err(TARGET_UNDERFLOW));
 
-        panics!(bad_iter: CapUnderflow::<FixedCap>::ensure_compatible(&INVALID_ITERATOR) 
+        panics!(bad_iter: CapUnderflow::<FixedCap>::ensure_compatible(&INVALID_ITER) 
             => "Invalid size hint");
     }
 }

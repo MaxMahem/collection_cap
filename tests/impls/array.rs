@@ -15,5 +15,5 @@ check_eq!(cap_constraint_overflow: TestArray::check_compatability(&OVER_ITER)
 check_eq!(cap_constraint_underflow: TestArray::check_compatability(&UNDER_ITER) 
     => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
-panics!(bad_iter: TestArray::check_compatability(&INVALID_ITERATOR) 
+panics!(bad_iter: TestArray::check_compatability(&INVALID_ITER) 
     => "Invalid size hint");

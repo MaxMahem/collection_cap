@@ -14,5 +14,5 @@ check_eq!(cap_constraint: TestArrayVec::check_compatability(&COMPAT_ITER) => Ok(
 check_eq!(cap_constraint_overflow: TestArrayVec::check_compatability(&OVER_ITER) 
     => Err(TARGET_OVERFLOW));
 
-panics!(bad_iter: TestArrayVec::check_compatability(&INVALID_ITERATOR) 
+panics!(bad_iter: TestArrayVec::check_compatability(&INVALID_ITER) 
     => "Invalid size hint");

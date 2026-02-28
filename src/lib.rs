@@ -5,6 +5,10 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+pub(crate) const INVALID_SIZE_HINT_MSG: &str = "Invalid size hint";
+pub(crate) const EMPTY_RANGE_MSG: &str = "Range must not be empty";
+pub(crate) const INVALID_RANGE_MSG: &str = "Invalid range (start > end)";
+
 mod capacity;
 mod impls;
 mod iter_cap_ext;

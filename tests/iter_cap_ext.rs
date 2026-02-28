@@ -20,7 +20,7 @@ mod ensure_compatible {
     check_eq!(underflow: UNDER_ITER.ensure_compatible::<FixedCap>() 
     => Err(CapError::Underflow(TARGET_UNDERFLOW)));
 
-    panics!(bad_iter: INVALID_ITERATOR.ensure_compatible::<FixedCap>() 
+    panics!(bad_iter: INVALID_ITER.ensure_compatible::<FixedCap>() 
     => "Invalid size hint");
 
     #[test]
@@ -41,6 +41,6 @@ mod ensure_compatible_with {
     check_eq!(underflow: UNDER_ITER.ensure_compatible_with(CAP_RANGE) 
         => Err(COMPAT_ERROR_UNDERFLOWS));
 
-    panics!(bad_iter: INVALID_ITERATOR.ensure_compatible_with(CAP_RANGE) 
+    panics!(bad_iter: INVALID_ITER.ensure_compatible_with(CAP_RANGE) 
         => "Invalid size hint");
 }
