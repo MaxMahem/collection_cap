@@ -1,4 +1,3 @@
-mod range;
 mod r#static;
 mod variable;
 

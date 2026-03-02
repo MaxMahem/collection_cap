@@ -2,7 +2,9 @@ use core::ops::Bound::*;
 use core::ops::RangeBounds;
 
 use collection_cap::Capacity;
+use collection_cap::VariableCap;
 use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal};
+use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
 
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
@@ -15,7 +17,9 @@ const EXACT_CAP: ExactCapVal = ExactCapVal(CAP);
 mod max_cap_val {
     use super::*;
 
-    check_eq!(from_exact: MaxCapVal::from(EXACT_CAP) => MAX_CAP);
+    check_eq!(capacity: MAX_CAP.capacity() => MAX_CAP);
+
+    check_eq!(from_static: MaxCapVal::from(StaticMaxCap::<CAP>) => MAX_CAP);
 
     mod range_bounds {
         use super::*;
@@ -39,7 +43,9 @@ mod max_cap_val {
 mod min_cap_val {
     use super::*;
 
-    check_eq!(from_exact: MinCapVal::from(EXACT_CAP) => MIN_CAP);
+    check_eq!(capacity: MIN_CAP.capacity() => MIN_CAP);
+
+    check_eq!(from_static: MinCapVal::from(StaticMinCap::<CAP>) => MIN_CAP);
 
     mod range_bounds {
         use super::*;
@@ -65,10 +71,14 @@ mod min_max_cap_val {
 
     use super::*;
 
+    check_eq!(capacity: MIN_MAX_CAP.capacity() => MIN_MAX_CAP);
+
     check_eq!(new: MinMaxCapVal::new(CAP, CAP) => MIN_MAX_CAP);
     check_eq!(min_val: MIN_MAX_CAP.min() => MinCapVal(CAP));
     check_eq!(max_val: MIN_MAX_CAP.max() => MaxCapVal(CAP));
     check_eq!(from_exact: MinMaxCapVal::from(EXACT_CAP) => MIN_MAX_CAP);
+    check_eq!(from_static: MinMaxCapVal::from(StaticMinMaxCap::<CAP, CAP>) => MIN_MAX_CAP);
+    check_eq!(from_static_exact: MinMaxCapVal::from(StaticExactCap::<CAP>) => MIN_MAX_CAP);
 
     mod range_bounds {
         use super::*;
@@ -100,6 +110,10 @@ mod min_max_cap_val {
 
 mod exact {
     use super::*;
+
+    check_eq!(capacity: EXACT_CAP.capacity() => EXACT_CAP);
+
+    check_eq!(from_static: ExactCapVal::from(StaticExactCap::<CAP>) => EXACT_CAP);
 
     mod range_bounds {
         use super::*;

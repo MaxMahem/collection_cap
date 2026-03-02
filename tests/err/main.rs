@@ -1,4 +1,6 @@
 #[path = "../common/mod.rs"]
 mod common;
 
-mod val;
+mod bound;
+mod compat;
+mod fit;

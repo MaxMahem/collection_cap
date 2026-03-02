@@ -1,7 +1,7 @@
 mod common;
 
 use collection_cap::IterCapExt;
-use collection_cap::err::CapError;
+use collection_cap::err::{StaticCapError, StaticCapOverflow, StaticCapUnderflow};
 
 use common::consts::*;
 use common::{check_eq, panics};
@@ -13,9 +13,9 @@ mod ensure_compatible {
 
     check_eq!(compatible: COMPAT_ITER.ensure_compatible::<FixedCap>() => Ok(()));
     check_eq!(overflow: OVER_ITER.ensure_compatible::<FixedCap>() 
-        => Err(CapError::Overflows(CAP_OVERFLOWS)));
+        => Err(StaticCapError::Overflow(StaticCapOverflow::new(OVER_CAP))));
     check_eq!(underflow: UNDER_ITER.ensure_compatible::<FixedCap>() 
-        => Err(CapError::Underflows(CAP_UNDERFLOWS)));
+        => Err(StaticCapError::Underflow(StaticCapUnderflow::new(UNDER_CAP))));
 
     panics!(bad_iter: INVALID_ITER.ensure_compatible::<FixedCap>() 
         => "Invalid size hint");
@@ -26,8 +26,6 @@ mod ensure_compatible {
         iter.ensure_compatible::<FixedCap>().expect("Should work for dyn Iterator");
     }
 }
-
-const CAP_RANGE: std::ops::Range<usize> = CAP..CAP + 1;
 
 mod ensure_compatible_with {
     use super::*;
