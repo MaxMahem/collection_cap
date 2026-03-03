@@ -1,10 +1,6 @@
 use core::ops::RangeBounds;
 
-/// A private module for internal implementation details.
-pub mod private {
-    /// A sealed trait used to restrict trait implementations to the crate.
-    pub trait Sealed {}
-}
+use crate::internal::Sealed;
 
 /// A type with a dynamic capacity constraint, that is mutable or determined at runtime.
 ///
@@ -20,14 +16,34 @@ pub mod private {
 /// A compatible iterator is not guaranteed to actually fit within the capacity
 /// constraints when fully consumed, unless it implements [`ExactSizeIterator`],
 /// or the entire range reported by [`Iterator::size_hint`] is within the capacity
-/// constraints.
-///
-/// However, an iterator that is not compatible is guaranteed to not fit within
-/// the capacity constraints when fully consumed.
+/// constraints. However, an iterator that is not compatible is guaranteed to
+/// not fit within the capacity constraints when fully consumed.
 ///
 /// See [`Iterator::size_hint`] for more details on how these bounds are
 /// calculated.
-pub trait Capacity: private::Sealed {
+///
+/// # Note on Fit
+///
+/// A iterator that 'fits' within the capacity constraints is one which, when
+/// fully iterated, all possible counts of elements it could produce lies
+/// within the capacity constraints, according to the iterator's [`Iterator::size_hint`].
+/// Put another way, an iterator's size hint provides the range of possible element
+/// counts it could have when fully consumed, and to be compatible, all values in that
+/// range must lie within the capacity constraints.
+///
+/// It is possible for an iterator to not 'fit' within the capacity constraints,
+/// under this definition, but still generate a count of elements that lies within
+/// the capacity constraints when fully consumed. But one that fits is guaranteed
+/// to do so.
+///
+/// Put another way, while a 'compatibility' check offers the possibility of a
+/// false positive, a 'fit' check offers the possibility of a false negative.
+///
+/// # Note on `ExactSizeIterator`
+///
+/// An [`ExactSizeIterator`] that is compatible is guaranteed to fit within the
+/// capacity constraints. Likewise, one that fits is guaranteed to be compatible.
+pub trait Capacity: Sealed {
     /// The error type returned if an iterator is not compatible with the
     /// capacity constraints.
     type Error;

@@ -59,3 +59,14 @@ mod range_inclusive {
 
     panics!(invalid: INVALID_RANGE.capacity() => "Invalid range (start > end)");
 }
+
+mod range_full {
+    use collection_cap::cap::UnboundedCap;
+
+    use super::*;
+    use std::ops::RangeFull;
+
+    const CAP_RANGE: RangeFull = ..;
+
+    check_eq!(capacity: CAP_RANGE.capacity() => UnboundedCap);
+}

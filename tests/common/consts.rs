@@ -7,8 +7,7 @@ use collection_cap::cap::{
     MaxCapVal, MinCapVal, MinMaxCapVal, StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap,
 };
 use collection_cap::err::{
-    CompatError, FitBoth, FitError, FitOverflow, FitUnderflow, MaxUnderflow, MinOverflow, StaticCapError,
-    StaticFitError, UpperBound, VarCapError,
+    CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow, UpperBound,
 };
 use size_hinter::{InvalidIterator, TestIterator};
 
@@ -27,8 +26,8 @@ pub const MIN_MAX_CAP_VAL: MinMaxCapVal = MinMaxCapVal::new(CAP, CAP);
 
 pub const MIN_OVERFLOWS: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
 pub const MAX_UNDERFLOWS: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
-pub const CAP_ERROR_OVERFLOW: VarCapError = CompatError::Overflow(MIN_OVERFLOWS);
-pub const CAP_ERROR_UNDERFLOW: VarCapError = CompatError::Underflow(MAX_UNDERFLOWS);
+pub const CAP_ERROR_OVERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Overflow(MIN_OVERFLOWS);
+pub const CAP_ERROR_UNDERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Underflow(MAX_UNDERFLOWS);
 
 pub const CAP_RANGE: Range<usize> = CAP..CAP + 1;
 
@@ -43,9 +42,11 @@ pub const BOTH_ITER: TestIterator<i32> = TestIterator::new((UNDER_CAP, Some(OVER
 
 // --- FIT ---
 
-// Variable version of fit errors
-pub const VAR_FIT_OVERFLOW: FitOverflow<MaxCapVal> = FitOverflow::<MaxCapVal>::fixed(OVER_CAP, MAX_CAP_VAL);
-pub const VAR_FIT_UNDERFLOW: FitUnderflow<MinCapVal> = FitUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+pub const MIN_UNDERFLOWS: MinUnderflow<MinCapVal> = MinUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+pub const MAX_OVERFLOWS: MaxOverflow<MaxCapVal> = MaxOverflow::<MaxCapVal>::fixed(OVER_CAP, MAX_CAP_VAL);
+pub const MAX_OVERFLOWS_UNBOUNDED: MaxOverflow<MaxCapVal> = MaxOverflow::<MaxCapVal>::unbounded(MAX_CAP_VAL);
+pub const FIT_ERROR_SPAN: FitErrorSpan<MinCapVal, MaxCapVal> = FitErrorSpan::new(MAX_OVERFLOWS, MIN_UNDERFLOWS);
 
-pub const VAR_FIT_ERROR_OVERFLOW: FitError<MinCapVal, MaxCapVal> = FitError::Overflow(VAR_FIT_OVERFLOW);
-pub const VAR_FIT_ERROR_UNDERFLOW: FitError<MinCapVal, MaxCapVal> = FitError::Underflow(VAR_FIT_UNDERFLOW);
+pub const FIT_ERROR_OVERFLOW: FitError<MinCapVal, MaxCapVal> = FitError::Overflow(MAX_OVERFLOWS);
+pub const FIT_ERROR_UNDERFLOW: FitError<MinCapVal, MaxCapVal> = FitError::Underflow(MIN_UNDERFLOWS);
+pub const FIT_ERROR_BOTH: FitError<MinCapVal, MaxCapVal> = FitError::Both(FIT_ERROR_SPAN);

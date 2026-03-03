@@ -4,11 +4,6 @@ use core::ops::RangeBounds;
 use crate::cap::{MaxCapVal, MinCapVal};
 use crate::capacity::StaticCap;
 
-/// An error representing a capacity violation with variable bounds.
-pub type VarCapError = CompatError<MinCapVal, MaxCapVal>;
-/// An error representing a capacity violation with static bounds.
-pub type StaticCapError<C> = CompatError<<C as Capacity>::Min, <C as Capacity>::Max>;
-
 /// A [`CompatError`] indicating that a fully consumed [`Iterator`] produces
 /// fewer elements than the minimum required by a [`Capacity`] constraint.
 ///
@@ -19,7 +14,7 @@ pub type StaticCapError<C> = CompatError<<C as Capacity>::Min, <C as Capacity>::
 ///
 /// - `CAP`: The type of the min capacity constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("Capacity underflow: max iterator size {max_size} < min capacity {min_cap}")]
+#[error("Capacity underflow: max iterator size {max_size} < {min_cap:?}")]
 pub struct MaxUnderflow<CAP = MinCapVal> {
     /// The maximum number of elements produced.
     max_size: usize,
@@ -63,6 +58,17 @@ impl<CAP> MaxUnderflow<CAP> {
     pub(crate) const fn from_parts(max_size: usize, min_cap: CAP) -> Self {
         Self { max_size, min_cap }
     }
+
+    /// The maximum number of elements the [`Iterator`] produces.
+    #[must_use]
+    pub const fn max_size(&self) -> usize {
+        self.max_size
+    }
+
+    /// The violated min capacity constraint.
+    pub const fn min_cap(&self) -> &CAP {
+        &self.min_cap
+    }
 }
 
 impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxUnderflow<CAP> {
@@ -97,19 +103,6 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxUnderflow<CAP> {
     }
 }
 
-impl<CAP> MaxUnderflow<CAP> {
-    /// The maximum number of elements the [`Iterator`] produces.
-    #[must_use]
-    pub const fn max_size(&self) -> usize {
-        self.max_size
-    }
-
-    /// The violated min capacity constraint.
-    pub const fn min_cap(&self) -> &CAP {
-        &self.min_cap
-    }
-}
-
 /// A [`CompatError`] indicating that a fully consumed [`Iterator`] produces
 /// more elements than the maximum allowed by a [`Capacity`] constraint.
 ///
@@ -120,7 +113,7 @@ impl<CAP> MaxUnderflow<CAP> {
 ///
 /// - `CAP`: The type of the max capacity constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-#[error("Capacity overflow: min iterator size {min_size} > max capacity {max_cap}")]
+#[error("Capacity overflow: min iterator size {min_size} > {max_cap:?}")]
 pub struct MinOverflow<CAP> {
     /// The minimum number of elements produced.
     min_size: usize,
@@ -212,8 +205,8 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MinOverflow<CAP> {
 /// A violation of a [`Capacity`] constraint.
 ///
 /// This indicates that a fully consumed [`Iterator`] is not compatible with a
-/// [`Capacity`] constraint. See [`crate::Capacity#note-on-compatibility`] for
-/// details.
+/// [`Capacity`] constraint, either because the fully consumed iterator will produce
+/// too many or too few elements.
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum CompatError<MIN, MAX> {
     /// The minimum number of elements the iterator will produce is greater

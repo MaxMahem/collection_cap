@@ -1,9 +1,9 @@
 use core::ops::Bound::*;
 use core::ops::RangeBounds;
 
-use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCapVal};
+use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCap};
 use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
-use collection_cap::err::{FitError, FitOverflow};
+use collection_cap::err::{FitError, MaxOverflow};
 use collection_cap::{Capacity, VariableCap};
 
 use crate::common::consts::*;
@@ -20,6 +20,7 @@ mod min_cap {
     check_eq!(capacity: MIN_CAP.capacity() => MIN_CAP);
     check_eq!(from_static: MinCapVal::from(StaticMinCap::<CAP>) => MIN_CAP);
     check_eq!(min_cap: MIN_CAP.min_cap() => MIN_CAP);
+    check_eq!(max_cap: MIN_CAP.max_cap() => UnboundedCap);
 
     mod range_bounds {
         use super::*;
@@ -41,7 +42,7 @@ mod min_cap {
         use super::*;
 
         check_eq!(compatible: MIN_CAP.check_fit(&COMPAT_ITER) => Ok(()));
-        check_eq!(underflow: MIN_CAP.check_fit(&UNDER_ITER) => Err(VAR_FIT_UNDERFLOW));
+        check_eq!(underflow: MIN_CAP.check_fit(&UNDER_ITER) => Err(MIN_UNDERFLOWS));
 
         panics!(bad_iter: MIN_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
     }
@@ -52,6 +53,7 @@ mod max_cap {
 
     check_eq!(capacity: MAX_CAP.capacity() => MAX_CAP);
     check_eq!(from_static: MaxCapVal::from(StaticMaxCap::<CAP>) => MAX_CAP);
+    check_eq!(min_cap: MAX_CAP.min_cap() => UnboundedCap);
     check_eq!(max_cap: MAX_CAP.max_cap() => MAX_CAP);
 
     mod range_bounds {
@@ -74,9 +76,9 @@ mod max_cap {
         use super::*;
 
         check_eq!(compatible: MAX_CAP.check_fit(&COMPAT_ITER) => Ok(()));
-        check_eq!(overflow: MAX_CAP.check_fit(&OVER_ITER) => Err(VAR_FIT_OVERFLOW));
+        check_eq!(overflow: MAX_CAP.check_fit(&OVER_ITER) => Err(MAX_OVERFLOWS));
         check_eq!(overflow_unbounded: MAX_CAP.check_fit(&OVER_ITER_UNBOUNDED) 
-            => Err(FitOverflow::unbounded(MAX_CAP)));
+            => Err(MaxOverflow::unbounded(MAX_CAP)));
 
         panics!(bad_iter: MAX_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
     }
@@ -120,10 +122,10 @@ mod min_max_cap {
         use super::*;
 
         check_eq!(compatible: MIN_MAX_CAP.check_fit(&COMPAT_ITER) => Ok(()));
-        check_eq!(underflow: MIN_MAX_CAP.check_fit(&UNDER_ITER) => Err(VAR_FIT_ERROR_UNDERFLOW));
-        check_eq!(overflow: MIN_MAX_CAP.check_fit(&OVER_ITER) => Err(VAR_FIT_ERROR_OVERFLOW));
-        check_eq!(overflow_unbounded: MIN_MAX_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(FitOverflow::unbounded(MAX_CAP))));
-        check_eq!(both: MIN_MAX_CAP.check_fit(&BOTH_ITER) => Err(FitError::Both(collection_cap::err::FitBoth::new(VAR_FIT_OVERFLOW, VAR_FIT_UNDERFLOW))));
+        check_eq!(underflow: MIN_MAX_CAP.check_fit(&UNDER_ITER) => Err(FIT_ERROR_UNDERFLOW));
+        check_eq!(overflow: MIN_MAX_CAP.check_fit(&OVER_ITER) => Err(FIT_ERROR_OVERFLOW));
+        check_eq!(overflow_unbounded: MIN_MAX_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(MaxOverflow::unbounded(MAX_CAP))));
+        check_eq!(both: MIN_MAX_CAP.check_fit(&BOTH_ITER) => Err(FIT_ERROR_BOTH));
 
         panics!(bad_iter: MIN_MAX_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
     }
@@ -161,25 +163,11 @@ mod exact_cap {
         use super::*;
 
         check_eq!(compatible: EXACT_CAP.check_fit(&COMPAT_ITER) => Ok(()));
-        check_eq!(underflow: EXACT_CAP.check_fit(&UNDER_ITER) => Err(VAR_FIT_ERROR_UNDERFLOW));
-        check_eq!(overflow: EXACT_CAP.check_fit(&OVER_ITER) => Err(VAR_FIT_ERROR_OVERFLOW));
-        check_eq!(overflow_unbounded: EXACT_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(FitOverflow::unbounded(MAX_CAP))));
-        check_eq!(both: EXACT_CAP.check_fit(&BOTH_ITER) => Err(FitError::Both(collection_cap::err::FitBoth::new(VAR_FIT_OVERFLOW, VAR_FIT_UNDERFLOW))));
+        check_eq!(underflow: EXACT_CAP.check_fit(&UNDER_ITER) => Err(FIT_ERROR_UNDERFLOW));
+        check_eq!(overflow: EXACT_CAP.check_fit(&OVER_ITER) => Err(FIT_ERROR_OVERFLOW));
+        check_eq!(overflow_unbounded: EXACT_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(MaxOverflow::unbounded(MAX_CAP))));
+        check_eq!(both: EXACT_CAP.check_fit(&BOTH_ITER) => Err(FIT_ERROR_BOTH));
 
         panics!(bad_iter: EXACT_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
-    }
-}
-
-mod unbounded {
-    use super::*;
-
-    check_eq!(compatible: UnboundedCapVal.check_compatibility(&COMPAT_ITER) => Ok(()));
-    check_eq!(fit: UnboundedCapVal.check_fit(&COMPAT_ITER) => Ok(()));
-
-    mod range_bounds {
-        use super::*;
-
-        check_eq!(start_bound: UnboundedCapVal.start_bound() => Unbounded);
-        check_eq!(end_bound: UnboundedCapVal.end_bound() => Unbounded);
     }
 }
