@@ -11,16 +11,36 @@ use crate::internal::Sealed;
 /// according to the iterator's [`Iterator::size_hint`]. Put another way, an
 /// iterator's size hint provides the range of possible element counts it could
 /// have when fully consumed, and to be compatible, at least one value in that
-/// range must overlap with the capacity constraints.
+/// range must overlap with the capacity range.
 ///
 /// A compatible iterator is not guaranteed to actually fit within the capacity
 /// constraints when fully consumed, unless it implements [`ExactSizeIterator`],
 /// or the entire range reported by [`Iterator::size_hint`] is within the capacity
-/// constraints. However, an iterator that is not compatible is guaranteed to
-/// not fit within the capacity constraints when fully consumed.
+/// constraints (see [`Capacity::check_fit`] to test this).
 ///
-/// See [`Iterator::size_hint`] for more details on how these bounds are
-/// calculated.
+/// However, an iterator that is not compatible is guaranteed to not fit within
+/// the capacity constraints when fully consumed. That is, there can be false
+/// positives, but no false negatives.
+///
+/// ## Examples
+///
+/// ```rust
+/// # use collection_cap::Capacity;
+/// # use collection_cap::cap::StaticMinCap;
+/// let require_10 = StaticMinCap::<10>;
+///
+/// let at_most_10 = (0..10).filter(|_| false);
+/// assert!(at_most_10.size_hint() == (0, Some(10)));
+/// require_10.check_compatibility(&at_most_10).expect("Should be compatible");
+///
+/// let at_most_9 = (0..9).filter(|_| false);
+/// assert!(at_most_9.size_hint() == (0, Some(9)));
+/// require_10.check_compatibility(&at_most_9).expect_err("Should not be compatible");
+///
+/// let produce_0 = (0..100).filter(|_| false);
+/// assert!(produce_0.size_hint() == (0, Some(100)));
+/// require_10.check_compatibility(&produce_0).expect("Should be compatible");
+/// ```
 ///
 /// # Note on Fit
 ///
@@ -34,15 +54,42 @@ use crate::internal::Sealed;
 /// It is possible for an iterator to not 'fit' within the capacity constraints,
 /// under this definition, but still generate a count of elements that lies within
 /// the capacity constraints when fully consumed. But one that fits is guaranteed
-/// to do so.
+/// to do so. That is, there can be false negatives, but no false positives.
 ///
-/// Put another way, while a 'compatibility' check offers the possibility of a
-/// false positive, a 'fit' check offers the possibility of a false negative.
+/// ## Examples
+///
+/// ```rust
+/// # use collection_cap::Capacity;
+/// # use collection_cap::cap::StaticMaxCap;
+/// let max_10 = StaticMaxCap::<10>;
+///
+/// let exactly_10 = 0..10;
+/// assert!(exactly_10.size_hint() == (10, Some(10)));
+/// max_10.check_fit(&exactly_10).expect("Should fit");
+///
+/// let exactly_11 = 0..11;
+/// assert!(exactly_11.size_hint() == (11, Some(11)));
+/// max_10.check_fit(&exactly_11).expect_err("Should not fit");
+/// ```
+///
+/// False negatives are possible, [`Capacity::check_fit`] requires that the
+/// entire range reported by [`Iterator::size_hint`] is within the capacity
+/// constraints. Valid iterators may still fail the check.
+///
+/// ```rust
+/// # use collection_cap::{Capacity, cap::StaticMinCap};
+/// let require_10_to_inf = StaticMinCap::<10>;
+/// let produces_10 = (0..10).filter(|_| true);
+/// assert!(produces_10.size_hint() == (0, Some(10)), "Range is [0, 10]");
+/// require_10_to_inf.check_fit(&produces_10)
+///     .expect_err("Range of [0, 10] should not be entirely within [10, inf)");
+/// ```
 ///
 /// # Note on `ExactSizeIterator`
 ///
-/// An [`ExactSizeIterator`] that is compatible is guaranteed to fit within the
-/// capacity constraints. Likewise, one that fits is guaranteed to be compatible.
+/// An [`ExactSizeIterator`] that passes [`Capacity::check_compatibility`] is
+/// guaranteed to fit within the capacity constraints. Likewise, one that fails
+/// [`Capacity::check_fit`] is guaranteed to be incompatible.
 pub trait Capacity: Sealed {
     /// The error type returned if an iterator is not compatible with the
     /// capacity constraints.
@@ -65,26 +112,42 @@ pub trait Capacity: Sealed {
 
     /// Checks if `iter` is compatible with this capacity constraint.
     ///
+    /// See [type-level documentation](Self#note-on-compatibility) for more
+    /// details.
+    ///
     /// # Arguments
     ///
     /// * `iter` - The [`Iterator`] to check.
     ///
     /// # Errors
     ///
-    /// [`Self::Error`] if the capacity constraints are not met.
+    /// Returns [`Self::Error`] if the iterator's size hint is incompatible
+    /// with the capacity constraints.
     ///
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use collection_cap::{Capacity, cap::StaticMinCap};
+    /// let require_10 = StaticMinCap::<10>;
+    ///
+    /// require_10.check_compatibility(&(0..10)).expect("Should be compatible");
+    /// require_10.check_compatibility(&(0..5)).expect_err("Should not be compatible");
+    ///
+    /// let produce_0 = (0..100).filter(|_| false);
+    /// require_10.check_compatibility(&produce_0)
+    ///     .expect("Should be a false positive");
+    /// ```
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized;
 
     /// Checks if `iter` is guaranteed to fit within the capacity constraints.
     ///
-    /// Unlike [`check_compatibility`](Self::check_compatibility), which returns
-    /// `Ok` if it is *possible* that the iterator fits, this method returns `Ok`
-    /// only when the iterator's size hint *guarantees* it fits.
+    /// See [type-level documentation](Self#note-on-fit) for more details.
     ///
     /// # Arguments
     ///
@@ -92,12 +155,27 @@ pub trait Capacity: Sealed {
     ///
     /// # Errors
     ///
-    /// [`Self::FitError`] if the iterator is not guaranteed to fit within the
-    /// capacity constraints.
+    /// Returns [`Self::FitError`] if the iterator is not guaranteed to fit
+    /// within the capacity constraints.
     ///
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use collection_cap::{Capacity, cap::StaticMaxCap, cap::MinCapVal};
+    /// let max_10 = StaticMaxCap::<10>;
+    ///
+    /// max_10.check_fit(&(0..10)).expect("Should fit");
+    /// max_10.check_fit(&(0..11)).expect_err("Should not fit");
+    ///
+    /// let require_10 = MinCapVal(10);
+    /// let produce_15 = (0..15).filter(|_| true);
+    /// require_10.check_fit(&produce_15)
+    ///     .expect_err("Should be a false negative");
+    /// ```
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
     where
         I: Iterator + ?Sized;
@@ -109,12 +187,7 @@ pub trait Capacity: Sealed {
 ///
 /// Success on a compatibility check means that the iterator's declared bounds
 /// (from [`Iterator::size_hint`]) do not contradict the capacity constraints.
-/// It does not guarantee that the iterator will actually be compatible during
-/// iteration, as the `size_hint` only reports the minimum and maximum number
-/// of elements an iterator *might* produce.
-///
-/// See [`Iterator::size_hint`] for more details on how these bounds are
-/// calculated.
+/// See [`Capacity#note-on-compatibility`] and [`Capacity#note-on-fit`] for details.
 pub trait StaticCap {
     /// The type of the capacity constraint value.
     type Cap: Capacity;
@@ -123,18 +196,7 @@ pub trait StaticCap {
     const CAP: Self::Cap;
 }
 
-/// A type with a runtime capacity that can validate iterator compatibility.
-///
-/// # Note on Compatibility
-///
-/// Success on a compatibility check means that the iterator's declared bounds
-/// (from [`Iterator::size_hint`]) do not contradict the capacity constraints.
-/// It does not guarantee that the iterator will actually be compatible during
-/// iteration, as the `size_hint` only reports the minimum and maximum number
-/// of elements an iterator *might* produce.
-///
-/// See [`Iterator::size_hint`] for more details on how these bounds are
-/// calculated.
+/// A type with a mutable [`Capacity`] or one that is determined at runtime.
 pub trait VariableCap {
     /// The type of the capacity constraint value.
     type Cap: Capacity;

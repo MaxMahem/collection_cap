@@ -10,6 +10,8 @@ use crate::capacity::StaticCap;
 /// This occurs when the maximum possible number of elements the iterator could
 /// produce is less than the minimum of the constraint.
 ///
+/// See [`Capacity#note-on-compatibility`] for more details.
+///
 /// # Type Parameters
 ///
 /// - `CAP`: The type of the min capacity constraint.
@@ -33,16 +35,6 @@ impl MaxUnderflow<MinCapVal> {
     /// # Panics
     ///
     /// Panics if `max_size` is >= `min_cap`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::err::MaxUnderflow;
-    /// # use collection_cap::cap::MinCapVal;
-    /// let err = MaxUnderflow::<MinCapVal>::new(5, MinCapVal(10));
-    /// assert_eq!(err.max_size(), 5);
-    /// assert_eq!(*err.min_cap(), MinCapVal(10));
-    /// ```
     #[must_use]
     pub const fn new(max_size: usize, min_cap: MinCapVal) -> Self {
         match max_size < min_cap.0 {
@@ -83,17 +75,6 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxUnderflow<CAP> {
     /// # Panics
     ///
     /// Panics if the capacity check is not violated.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::err::MaxUnderflow;
-    /// # use collection_cap::cap::StaticMinCap;
-    /// # use collection_cap::StaticCap;
-    /// let err = MaxUnderflow::<StaticMinCap<10>>::new(5);
-    /// assert_eq!(err.max_size(), 5);
-    /// assert_eq!(*err.min_cap(), StaticMinCap::<10>::CAP);
-    /// ```
     #[must_use]
     pub fn new(max_size: usize) -> Self {
         match CAP::CAP.min_cap().contains(&max_size) {
@@ -108,6 +89,8 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxUnderflow<CAP> {
 ///
 /// This occurs when the minimum possible number of elements the iterator will
 /// produce is greater than the maximum capacity.
+///
+/// See [`Capacity#note-on-compatibility`] for more details.
 ///
 /// # Type Parameters
 ///
@@ -132,16 +115,6 @@ impl MinOverflow<MaxCapVal> {
     /// # Panics
     ///
     /// Panics if `min_size` <= `max_cap`.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::err::MinOverflow;
-    /// # use collection_cap::cap::MaxCapVal;
-    /// let err = MinOverflow::<MaxCapVal>::new(10, MaxCapVal(5));
-    /// assert_eq!(err.min_size(), 10);
-    /// assert_eq!(*err.max_cap(), MaxCapVal(5));
-    /// ```
     #[must_use]
     pub const fn new(min_size: usize, max_cap: MaxCapVal) -> Self {
         match min_size > max_cap.0 {
@@ -182,17 +155,6 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MinOverflow<CAP> {
     /// # Panics
     ///
     /// Panics if the capacity check is not violated.
-    ///
-    /// # Examples
-    ///
-    /// ```rust
-    /// # use collection_cap::err::MinOverflow;
-    /// # use collection_cap::cap::StaticMaxCap;
-    /// # use collection_cap::StaticCap;
-    /// let err = MinOverflow::<StaticMaxCap<10>>::new(15);
-    /// assert_eq!(err.min_size(), 15);
-    /// assert_eq!(*err.max_cap(), StaticMaxCap::<10>::CAP);
-    /// ```
     #[must_use]
     pub fn new(min_size: usize) -> Self {
         match CAP::CAP.max_cap().contains(&min_size) {
@@ -207,6 +169,13 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MinOverflow<CAP> {
 /// This indicates that a fully consumed [`Iterator`] is not compatible with a
 /// [`Capacity`] constraint, either because the fully consumed iterator will produce
 /// too many or too few elements.
+///
+/// See [`Capacity#note-on-compatibility`] for more details.
+///
+/// # Type Parameters
+///
+/// - `MIN`: The type of the minimum capacity constraint.
+/// - `MAX`: The type of the maximum capacity constraint.
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
 pub enum CompatError<MIN, MAX> {
     /// The minimum number of elements the iterator will produce is greater

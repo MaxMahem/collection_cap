@@ -17,7 +17,7 @@ mod iter_cap_ext;
 pub use capacity::*;
 pub use iter_cap_ext::*;
 
-/// Capacity constraints.
+/// [`Capacity`] constraints types.
 pub mod cap;
-/// Capacity validation errors.
+/// [`Capacity`] validation errors.
 pub mod err;

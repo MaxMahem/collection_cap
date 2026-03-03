@@ -10,7 +10,9 @@ use crate::{Capacity, StaticCap};
 /// This occurs when the minimum possible number of elements the iterator will
 /// produce is less than the minimum of the constraint.
 ///
-/// # Type Parameter
+/// See [`Capacity#note-on-fit`] for more details.
+///
+/// # Type Parameters
 ///
 /// - `CAP`: The type of the minimum capacity constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -88,7 +90,9 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MinUnderflow<CAP> {
 /// This occurs when the maximum possible number of elements the iterator could
 /// produce is greater than the maximum capacity.
 ///
-/// # Type Parameter
+/// See [`Capacity#note-on-fit`] for more details.
+///
+/// # Type Parameters
 ///
 /// - `CAP`: The type of the maximum capacity constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
@@ -178,6 +182,8 @@ impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxOverflow<CAP> {
 /// A [`FitError`] indicating that an [`Iterator`]'s size hint range
 /// extends both below the minimum and above the maximum capacity simultaneously.
 ///
+/// See [`Capacity#note-on-fit`] for more details.
+///
 /// # Type Parameters
 ///
 /// - `MIN`: The type of the minimum capacity constraint.
@@ -227,6 +233,8 @@ impl<MIN, MAX> FitErrorSpan<MIN, MAX> {
 /// A fit violation for a capacity constraint with both a minimum and maximum,
 /// indicating that the iterator's possible range is below the minimum, above
 /// the maximum capacity, or both simultaneously.
+///
+/// See [`Capacity#note-on-fit`] for more details.
 ///
 /// # Type Parameters
 ///
