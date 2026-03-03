@@ -35,7 +35,7 @@ pub trait IterCapExt {
         Self: Iterator,
         C: StaticCap,
     {
-        C::CAP.check_compatability(self)
+        C::CAP.check_compatibility(self)
     }
 
     /// Ensures that this iterator is compatible with the current capacity of
@@ -82,7 +82,7 @@ pub trait IterCapExt {
         Self: Iterator,
         CAP: VariableCap,
     {
-        cap.capacity().check_compatability(self)
+        cap.capacity().check_compatibility(self)
     }
 }
 

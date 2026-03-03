@@ -49,13 +49,13 @@ pub trait Capacity: private::Sealed {
     /// # Panics
     ///
     /// May panic if the iterator's size hint is not valid.
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized;
 
     /// Checks if `iter` is guaranteed to fit within the capacity constraints.
     ///
-    /// Unlike [`check_compatability`](Self::check_compatability), which returns
+    /// Unlike [`check_compatibility`](Self::check_compatibility), which returns
     /// `Ok` if it is *possible* that the iterator fits, this method returns `Ok`
     /// only when the iterator's size hint *guarantees* it fits.
     ///
@@ -76,16 +76,40 @@ pub trait Capacity: private::Sealed {
         I: Iterator + ?Sized;
 }
 
+/// A type with a minimum capacity constraint.
+pub trait MinCap {
+    /// The minimum capacity.
+    fn min_cap(&self) -> MinCapVal;
+}
+
+/// A type with a const minimum capacity constraint.
+pub trait ConstMinCap: MinCap {
+    /// The minimum capacity.
+    const MIN_CAP: MinCapVal;
+}
+
+impl<C: ConstMinCap> MinCap for C {
+    fn min_cap(&self) -> MinCapVal {
+        Self::MIN_CAP
+    }
+}
+
 /// A type with a maximum capacity constraint.
 pub trait MaxCap {
+    /// The maximum capacity.
+    fn max_cap(&self) -> MaxCapVal;
+}
+
+/// A type with a const maximum capacity constraint.
+pub trait ConstMaxCap: MaxCap {
     /// The maximum capacity.
     const MAX_CAP: MaxCapVal;
 }
 
-/// A type with a minimum capacity constraint.
-pub trait MinCap {
-    /// The minimum capacity.
-    const MIN_CAP: MinCapVal;
+impl<C: ConstMaxCap> MaxCap for C {
+    fn max_cap(&self) -> MaxCapVal {
+        Self::MAX_CAP
+    }
 }
 
 /// A type with an associated static capacity constraint.

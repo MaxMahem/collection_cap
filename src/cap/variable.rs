@@ -1,8 +1,8 @@
 use core::ops::{Bound, Not, RangeBounds};
 
 use crate::capacity::private::Sealed;
-use crate::err::{CapError, CapOverflow, CapUnderflow, FitBoth, FitError, FitOverflow, FitUnderflow};
-use crate::{Capacity, IterExt, VariableCap};
+use crate::err::{CompatError, FitBoth, FitError, FitOverflow, FitUnderflow, MaxUnderflow, MinOverflow};
+use crate::{Capacity, IterExt, MaxCap, MinCap, VariableCap};
 use derive_more::{Display, From, Into};
 use fluent_result::into::{IntoOption, IntoResult};
 use tap::Pipe;
@@ -19,6 +19,54 @@ macro_rules! impl_variable_cap_based_on_self {
     };
 }
 
+/// A runtime constraint specifying a minimum capacity.
+#[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
+pub struct MinCapVal(pub usize);
+
+impl Sealed for MinCapVal {}
+
+impl Capacity for MinCapVal {
+    type Error = MaxUnderflow<Self>;
+    type FitError = FitUnderflow<Self>;
+
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
+    where
+        I: Iterator + ?Sized,
+    {
+        match iter.valid_size_hint() {
+            (_, Some(max_size)) if !self.contains(&max_size) => MaxUnderflow::from_cap(max_size, *self).into_err(),
+            _ => Ok(()),
+        }
+    }
+
+    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    where
+        I: Iterator + ?Sized,
+    {
+        match iter.valid_size_hint() {
+            (min, _) if !self.contains(&min) => FitUnderflow::from_cap(min, *self).into_err(),
+            _ => Ok(()),
+        }
+    }
+}
+
+impl_variable_cap_based_on_self!(MinCapVal);
+
+impl MinCap for MinCapVal {
+    fn min_cap(&self) -> MinCapVal {
+        *self
+    }
+}
+
+impl RangeBounds<usize> for MinCapVal {
+    fn start_bound(&self) -> Bound<&usize> {
+        Bound::Included(&self.0)
+    }
+    fn end_bound(&self) -> Bound<&usize> {
+        Bound::Unbounded
+    }
+}
+
 /// A runtime constraint specifying a maximum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
 pub struct MaxCapVal(pub usize);
@@ -26,15 +74,15 @@ pub struct MaxCapVal(pub usize);
 impl Sealed for MaxCapVal {}
 
 impl Capacity for MaxCapVal {
-    type Error = CapOverflow;
-    type FitError = FitOverflow;
+    type Error = MinOverflow<Self>;
+    type FitError = FitOverflow<Self>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min_size, _) if !self.contains(&min_size) => CapOverflow::from_cap(min_size, *self).into_err(),
+            (min_size, _) if !self.contains(&min_size) => MinOverflow::from_cap(min_size, *self).into_err(),
             _ => Ok(()),
         }
     }
@@ -53,54 +101,18 @@ impl Capacity for MaxCapVal {
 
 impl_variable_cap_based_on_self!(MaxCapVal);
 
+impl MaxCap for MaxCapVal {
+    fn max_cap(&self) -> MaxCapVal {
+        *self
+    }
+}
+
 impl RangeBounds<usize> for MaxCapVal {
     fn start_bound(&self) -> Bound<&usize> {
         Bound::Unbounded
     }
     fn end_bound(&self) -> Bound<&usize> {
         Bound::Included(&self.0)
-    }
-}
-
-/// A runtime constraint specifying a minimum capacity.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into, Display)]
-pub struct MinCapVal(pub usize);
-
-impl Sealed for MinCapVal {}
-
-impl Capacity for MinCapVal {
-    type Error = CapUnderflow;
-    type FitError = FitUnderflow;
-
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
-        match iter.valid_size_hint() {
-            (_, Some(max_size)) if !self.contains(&max_size) => CapUnderflow::from_cap(max_size, *self).into_err(),
-            _ => Ok(()),
-        }
-    }
-
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
-    where
-        I: Iterator + ?Sized,
-    {
-        match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) => FitUnderflow::from_cap(min, *self).into_err(),
-            _ => Ok(()),
-        }
-    }
-}
-
-impl_variable_cap_based_on_self!(MinCapVal);
-
-impl RangeBounds<usize> for MinCapVal {
-    fn start_bound(&self) -> Bound<&usize> {
-        Bound::Included(&self.0)
-    }
-    fn end_bound(&self) -> Bound<&usize> {
-        Bound::Unbounded
     }
 }
 
@@ -169,17 +181,19 @@ impl PartialEq<ExactCapVal> for MinMaxCapVal {
 impl Sealed for MinMaxCapVal {}
 
 impl Capacity for MinMaxCapVal {
-    type Error = CapError;
-    type FitError = FitError;
+    type Error = CompatError<MinCapVal, MaxCapVal>;
+    type FitError = FitError<MinCapVal, MaxCapVal>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.max.contains(&min) => CapError::Overflow(CapOverflow::from_cap(min, self.max)).into_err(),
+            (min, _) if !self.max.contains(&min) => {
+                CompatError::Overflow(MinOverflow::from_cap(min, self.max)).into_err()
+            }
             (_, Some(max)) if !self.min.contains(&max) => {
-                CapError::Underflow(CapUnderflow::from_cap(max, self.min)).into_err()
+                CompatError::Underflow(MaxUnderflow::from_cap(max, self.min)).into_err()
             }
             _ => Ok(()),
         }
@@ -211,6 +225,18 @@ impl Capacity for MinMaxCapVal {
 
 impl_variable_cap_based_on_self!(MinMaxCapVal);
 
+impl MinCap for MinMaxCapVal {
+    fn min_cap(&self) -> MinCapVal {
+        self.min
+    }
+}
+
+impl MaxCap for MinMaxCapVal {
+    fn max_cap(&self) -> MaxCapVal {
+        self.max
+    }
+}
+
 impl From<ExactCapVal> for MinMaxCapVal {
     fn from(value: ExactCapVal) -> Self {
         Self::new_unchecked(value.0, value.0)
@@ -224,14 +250,14 @@ pub struct ExactCapVal(pub usize);
 impl Sealed for ExactCapVal {}
 
 impl Capacity for ExactCapVal {
-    type Error = CapError;
-    type FitError = FitError;
+    type Error = CompatError<MinCapVal, MaxCapVal>;
+    type FitError = FitError<MinCapVal, MaxCapVal>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        MinMaxCapVal::from(*self).check_compatability(iter)
+        MinMaxCapVal::from(*self).check_compatibility(iter)
     }
 
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
@@ -243,6 +269,18 @@ impl Capacity for ExactCapVal {
 }
 
 impl_variable_cap_based_on_self!(ExactCapVal);
+
+impl MinCap for ExactCapVal {
+    fn min_cap(&self) -> MinCapVal {
+        MinCapVal(self.0)
+    }
+}
+
+impl MaxCap for ExactCapVal {
+    fn max_cap(&self) -> MaxCapVal {
+        MaxCapVal(self.0)
+    }
+}
 
 impl RangeBounds<usize> for ExactCapVal {
     fn start_bound(&self) -> Bound<&usize> {
@@ -273,7 +311,7 @@ impl Capacity for UnboundedCapVal {
 
     /// Always returns `Ok(())` as an unbounded capacity constraint is
     /// compatible with any iterator.
-    fn check_compatability<I>(&self, _iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {

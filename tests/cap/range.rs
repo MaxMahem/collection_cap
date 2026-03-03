@@ -1,4 +1,3 @@
-use collection_cap::Capacity;
 use collection_cap::VariableCap;
 
 use crate::common::consts::*;
@@ -11,12 +10,9 @@ mod range_to {
     const CAP_RANGE: RangeTo<usize> = ..CAP + 1;
     const EMPTY_RANGE: RangeTo<usize> = ..0;
 
-    check_eq!(compatible: CAP_RANGE.capacity().check_compatability(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: CAP_RANGE.capacity().check_compatability(&OVER_ITER)
-            => Err(CAP_OVERFLOWS));
+    check_eq!(capacity: CAP_RANGE.capacity() => MAX_CAP_VAL);
 
-    panics!(empty: EMPTY_RANGE.capacity()
-            => "Range must not be empty");
+    panics!(empty: EMPTY_RANGE.capacity() => "Range must not be empty");
 }
 
 mod range_to_inclusive {
@@ -25,9 +21,7 @@ mod range_to_inclusive {
 
     const CAP_RANGE: RangeToInclusive<usize> = ..=CAP;
 
-    check_eq!(compatible: CAP_RANGE.capacity().check_compatability(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: CAP_RANGE.capacity().check_compatability(&OVER_ITER)
-            => Err(CAP_OVERFLOWS));
+    check_eq!(capacity: CAP_RANGE.capacity() => MAX_CAP_VAL);
 }
 
 mod range_from {
@@ -36,9 +30,7 @@ mod range_from {
 
     const CAP_RANGE: RangeFrom<usize> = CAP..;
 
-    check_eq!(compatible: CAP_RANGE.capacity().check_compatability(&COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: CAP_RANGE.capacity().check_compatability(&UNDER_ITER)
-            => Err(CAP_UNDERFLOWS));
+    check_eq!(capacity: CAP_RANGE.capacity() => MIN_CAP_VAL);
 }
 
 mod range_open {
@@ -49,17 +41,11 @@ mod range_open {
     const EMPTY_RANGE: Range<usize> = CAP..CAP;
     const INVALID_RANGE: Range<usize> = Range { start: CAP, end: CAP - 1 };
 
-    check_eq!(compatible: CAP_RANGE.capacity().check_compatability(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: CAP_RANGE.capacity().check_compatability(&OVER_ITER)
-            => Err(CAP_ERROR_OVERFLOW));
-    check_eq!(underflow: CAP_RANGE.capacity().check_compatability(&UNDER_ITER)
-            => Err(CAP_ERROR_UNDERFLOW));
+    check_eq!(capacity: CAP_RANGE.capacity() => MIN_MAX_CAP_VAL);
 
-    panics!(empty: EMPTY_RANGE.capacity()
-            => "Range must not be empty");
+    panics!(empty: EMPTY_RANGE.capacity() => "Range must not be empty");
 
-    panics!(invalid: INVALID_RANGE.capacity()
-            => "Invalid range (start > end)");
+    panics!(invalid: INVALID_RANGE.capacity() => "Invalid range (start > end)");
 }
 
 mod range_inclusive {
@@ -69,12 +55,7 @@ mod range_inclusive {
     const CAP_RANGE: RangeInclusive<usize> = CAP..=CAP;
     const INVALID_RANGE: RangeInclusive<usize> = RangeInclusive::new(CAP, CAP - 1);
 
-    check_eq!(compatible: CAP_RANGE.capacity().check_compatability(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: CAP_RANGE.capacity().check_compatability(&OVER_ITER)
-            => Err(CAP_ERROR_OVERFLOW));
-    check_eq!(underflow: CAP_RANGE.capacity().check_compatability(&UNDER_ITER)
-            => Err(CAP_ERROR_UNDERFLOW));
+    check_eq!(capacity: CAP_RANGE.capacity() => MIN_MAX_CAP_VAL);
 
-    panics!(invalid: INVALID_RANGE.capacity()
-            => "Invalid range (start > end)");
+    panics!(invalid: INVALID_RANGE.capacity() => "Invalid range (start > end)");
 }

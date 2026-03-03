@@ -7,7 +7,10 @@ macro_rules! check_eq {
     ($name:ident: $res:expr => $expected:expr) => {
         #[test]
         fn $name() {
-            assert_eq!($res, $expected);
+            let result = $res;
+            let expected = $expected;
+
+            assert_eq!(result, expected);
         }
     };
 }

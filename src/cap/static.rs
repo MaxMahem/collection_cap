@@ -6,10 +6,8 @@ use tap::Pipe;
 
 use crate::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal};
 use crate::capacity::private::Sealed;
-use crate::err::{
-    StaticCapError, StaticCapOverflow, StaticCapUnderflow, StaticFitError, StaticFitOverflow, StaticFitUnderflow,
-};
-use crate::{Capacity, IterExt, MaxCap, MinCap, StaticCap};
+use crate::err::{FitBoth, FitOverflow, FitUnderflow, MaxUnderflow, MinOverflow, StaticCapError, StaticFitError};
+use crate::{Capacity, ConstMaxCap, ConstMinCap, IterExt, StaticCap};
 
 /// A static minimum capacity constraint.
 ///
@@ -24,8 +22,12 @@ impl<const MIN: usize> StaticCap for StaticMinCap<MIN> {
     const CAP: Self::Cap = Self;
 }
 
-impl<const MIN: usize> MinCap for StaticMinCap<MIN> {
+impl<const MIN: usize> ConstMinCap for StaticMinCap<MIN> {
     const MIN_CAP: MinCapVal = MinCapVal(MIN);
+}
+
+impl<const MIN: usize> ConstMaxCap for StaticMinCap<MIN> {
+    const MAX_CAP: MaxCapVal = MaxCapVal(usize::MAX);
 }
 
 impl<const MIN: usize> Sealed for StaticMinCap<MIN> {}
@@ -41,15 +43,15 @@ impl<const MIN: usize> RangeBounds<usize> for StaticMinCap<MIN> {
 }
 
 impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
-    type Error = StaticCapUnderflow<Self>;
-    type FitError = StaticFitUnderflow<Self>;
+    type Error = MaxUnderflow<Self>;
+    type FitError = FitUnderflow<Self>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) => StaticCapUnderflow::new_unchecked(max).into_err(),
+            (_, Some(max)) if !self.contains(&max) => MaxUnderflow::new_unchecked(max).into_err(),
             _ => Ok(()),
         }
     }
@@ -59,7 +61,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) => StaticFitUnderflow::new_unchecked(min).into_err(),
+            (min, _) if !self.contains(&min) => FitUnderflow::new_unchecked(min).into_err(),
             _ => Ok(()),
         }
     }
@@ -84,11 +86,15 @@ impl<const MAX: usize> StaticCap for StaticMaxCap<MAX> {
     const CAP: Self::Cap = Self;
 }
 
-impl<const MAX: usize> MaxCap for StaticMaxCap<MAX> {
+impl<const MAX: usize> ConstMaxCap for StaticMaxCap<MAX> {
     const MAX_CAP: MaxCapVal = MaxCapVal(MAX);
 }
 
 impl<const MAX: usize> Sealed for StaticMaxCap<MAX> {}
+
+impl<const MAX: usize> ConstMinCap for StaticMaxCap<MAX> {
+    const MIN_CAP: MinCapVal = MinCapVal(0);
+}
 
 impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
     fn start_bound(&self) -> Bound<&usize> {
@@ -101,15 +107,15 @@ impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
 }
 
 impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
-    type Error = StaticCapOverflow<Self>;
-    type FitError = StaticFitOverflow<Self>;
+    type Error = MinOverflow<Self>;
+    type FitError = FitOverflow<Self>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min_size, _) if !self.contains(&min_size) => StaticCapOverflow::new_unchecked(min_size).into_err(),
+            (min_size, _) if !self.contains(&min_size) => MinOverflow::new_unchecked(min_size).into_err(),
             _ => Ok(()),
         }
     }
@@ -119,8 +125,8 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) => StaticFitOverflow::<Self>::fixed_unchecked(max).into_err(),
-            (_, None) => Err(StaticFitOverflow::<Self>::UNBOUNDED),
+            (_, Some(max)) if !self.contains(&max) => FitOverflow::<Self>::fixed_unchecked(max).into_err(),
+            (_, None) => Err(FitOverflow::<Self>::UNBOUNDED),
             _ => Ok(()),
         }
     }
@@ -133,39 +139,43 @@ impl<const MAX: usize> From<StaticMaxCap<MAX>> for MaxCapVal {
 }
 
 /// Checks if `iter` is compatible with the static capacity constraint `C`.
-fn check_static_compatability<C, I>(iter: &I) -> Result<(), StaticCapError<C>>
+fn check_static_compatibility<CAP, I>(iter: &I) -> Result<(), StaticCapError<CAP>>
 where
-    C: StaticCap + MinCap + MaxCap,
+    CAP: StaticCap<Cap = CAP> + ConstMinCap + ConstMaxCap,
     I: Iterator + ?Sized,
 {
     match iter.valid_size_hint() {
-        (min_size, _) if !C::MAX_CAP.contains(&min_size) => StaticCapOverflow::new_unchecked(min_size) //
+        (min_size, _) if !CAP::MAX_CAP.contains(&min_size) => MinOverflow::<CAP>::new_unchecked(min_size) //
             .pipe(StaticCapError::Overflow)
             .into_err(),
-        (_, Some(max_size)) if !C::MIN_CAP.contains(&max_size) => StaticCapUnderflow::new_unchecked(max_size) //
-            .pipe(StaticCapError::Underflow)
-            .into_err(),
+        (_, Some(max_size)) if !CAP::MIN_CAP.contains(&max_size) => {
+            MaxUnderflow::<CAP>::new_unchecked(max_size) //
+                .pipe(StaticCapError::Underflow)
+                .into_err()
+        }
         _ => Ok(()),
     }
 }
 
 /// Checks if `iter` is guaranteed to fit within the static capacity constraint `C`.
-fn check_static_fit<C, I>(iter: &I) -> Result<(), StaticFitError<C>>
+fn check_static_fit<CAP, I>(iter: &I) -> Result<(), StaticFitError<CAP>>
 where
-    C: StaticCap + MinCap + MaxCap,
+    CAP: StaticCap<Cap = CAP> + ConstMinCap + ConstMaxCap,
     I: Iterator + ?Sized,
 {
     let (min, max) = iter.valid_size_hint();
 
-    let underflow = (!C::MIN_CAP.contains(&min)).then(|| StaticFitUnderflow::new_unchecked(min));
+    let underflow = (!CAP::MIN_CAP.contains(&min)).then(|| FitUnderflow::<CAP>::new_unchecked(min));
     let overflow = match max {
-        Some(max) if !C::MAX_CAP.contains(&max) => StaticFitOverflow::fixed_unchecked(max).into_some(),
-        None => Some(StaticFitOverflow::UNBOUNDED),
+        Some(max) if !CAP::MAX_CAP.contains(&max) => FitOverflow::<CAP>::fixed_unchecked(max).into_some(),
+        None => Some(FitOverflow::<CAP>::UNBOUNDED),
         _ => None,
     };
 
     match (underflow, overflow) {
-        (Some(underflow), Some(overflow)) => StaticFitError::Both { overflow, underflow }.into_err(),
+        (Some(underflow), Some(overflow)) => FitBoth::from_parts_static(overflow, underflow) //
+            .pipe(StaticFitError::Both)
+            .into_err(),
         (Some(underflow), None) => StaticFitError::Underflow(underflow).into_err(),
         (None, Some(overflow)) => StaticFitError::Overflow(overflow).into_err(),
         (None, None) => Ok(()),
@@ -197,14 +207,14 @@ impl<const MIN: usize, const MAX: usize> StaticCap for StaticMinMaxCap<MIN, MAX>
     };
 }
 
-impl<const MIN: usize, const MAX: usize> MinCap for StaticMinMaxCap<MIN, MAX> {
+impl<const MIN: usize, const MAX: usize> ConstMinCap for StaticMinMaxCap<MIN, MAX> {
     const MIN_CAP: MinCapVal = {
         let () = Self::_CHECK;
         MinCapVal(MIN)
     };
 }
 
-impl<const MIN: usize, const MAX: usize> MaxCap for StaticMinMaxCap<MIN, MAX> {
+impl<const MIN: usize, const MAX: usize> ConstMaxCap for StaticMinMaxCap<MIN, MAX> {
     const MAX_CAP: MaxCapVal = {
         let () = Self::_CHECK;
         MaxCapVal(MAX)
@@ -227,11 +237,11 @@ impl<const MIN: usize, const MAX: usize> Capacity for StaticMinMaxCap<MIN, MAX> 
     type Error = StaticCapError<Self>;
     type FitError = StaticFitError<Self>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        check_static_compatability::<Self, I>(iter)
+        check_static_compatibility::<Self, I>(iter)
     }
 
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
@@ -261,11 +271,11 @@ impl<const SIZE: usize> StaticCap for StaticExactCap<SIZE> {
     const CAP: Self::Cap = Self;
 }
 
-impl<const SIZE: usize> MinCap for StaticExactCap<SIZE> {
+impl<const SIZE: usize> ConstMinCap for StaticExactCap<SIZE> {
     const MIN_CAP: MinCapVal = MinCapVal(SIZE);
 }
 
-impl<const SIZE: usize> MaxCap for StaticExactCap<SIZE> {
+impl<const SIZE: usize> ConstMaxCap for StaticExactCap<SIZE> {
     const MAX_CAP: MaxCapVal = MaxCapVal(SIZE);
 }
 
@@ -285,11 +295,11 @@ impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
     type Error = StaticCapError<Self>;
     type FitError = StaticFitError<Self>;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
-        check_static_compatability::<Self, I>(iter)
+        check_static_compatibility::<Self, I>(iter)
     }
 
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
@@ -339,7 +349,7 @@ impl Capacity for StaticUnboundedCap {
     type Error = Infallible;
     type FitError = Infallible;
 
-    fn check_compatability<I>(&self, _iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::Error>
     where
         I: Iterator + ?Sized,
     {
