@@ -1,3 +1,4 @@
+use collection_cap::cap::StaticMaxCap;
 use collection_cap::err::MinOverflow;
 use collection_cap::{IterCapExt, VariableCap};
 
@@ -23,7 +24,7 @@ mod static_cap {
 
     check_eq!(compatible: COMPAT_ITER.ensure_compatible::<TestArrayVec>() => Ok(()));
     check_eq!(overflow: OVER_ITER.ensure_compatible::<TestArrayVec>()
-        => Err(MinOverflow::new_static(OVER_CAP)));
+        => Err(MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP)));
 }
 
 panics!(bad_iter: INVALID_ITER.ensure_compatible::<TestArrayVec>()

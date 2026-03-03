@@ -1,6 +1,7 @@
 mod common;
 
 use collection_cap::IterCapExt;
+use collection_cap::cap::{StaticMaxCap, StaticMinCap};
 use collection_cap::err::{CompatError, MaxUnderflow, MinOverflow};
 use common::consts::*;
 use common::{check_eq, panics};
@@ -12,9 +13,9 @@ mod ensure_compatible {
 
     check_eq!(compatible: COMPAT_ITER.ensure_compatible::<FixedCap>() => Ok(()));
     check_eq!(underflow: UNDER_ITER.ensure_compatible::<FixedCap>()
-        => Err(CompatError::Underflow(MaxUnderflow::new_static(UNDER_CAP))));
+        => Err(CompatError::Underflow(MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP))));
     check_eq!(overflow: OVER_ITER.ensure_compatible::<FixedCap>()
-        => Err(CompatError::Overflow(MinOverflow::new_static(OVER_CAP))));
+        => Err(CompatError::Overflow(MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP))));
 
     panics!(bad_iter: INVALID_ITER.ensure_compatible::<FixedCap>() 
         => "Invalid size hint");

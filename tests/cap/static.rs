@@ -4,7 +4,7 @@ use core::ops::RangeBounds;
 use collection_cap::Capacity;
 use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap, StaticUnboundedCap};
 use collection_cap::err::{
-    FitBoth, FitError, FitOverflow, FitUnderflow, MaxUnderflow, MinOverflow, StaticCapError, StaticFitError,
+    CompatError, FitBoth, FitError, FitOverflow, FitUnderflow, MaxUnderflow, MinOverflow, StaticCapError,
 };
 
 use crate::common::consts::*;
@@ -18,7 +18,7 @@ mod min_cap {
 
         check_eq!(compatible: StaticMinCap::<CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
         check_eq!(underflow: StaticMinCap::<CAP>.check_compatibility(&UNDER_ITER)
-            => Err(MaxUnderflow::new_static(UNDER_CAP)));
+            => Err(MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP)));
         panics!(bad_iter: StaticMinCap::<CAP>.check_compatibility(&INVALID_ITER)
             => "Invalid size hint");
     }
@@ -28,7 +28,7 @@ mod min_cap {
 
         check_eq!(compatible: StaticMinCap::<CAP>.check_fit(&COMPAT_ITER) => Ok(()));
         check_eq!(underflow: StaticMinCap::<CAP>.check_fit(&UNDER_ITER)
-            => Err(FitUnderflow::new_static(UNDER_CAP)));
+            => Err(FitUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP)));
         panics!(bad_iter: StaticMinCap::<CAP>.check_fit(&INVALID_ITER)
             => "Invalid size hint");
     }
@@ -49,7 +49,7 @@ mod max_cap {
 
         check_eq!(compatible: StaticMaxCap::<CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
         check_eq!(overflow: StaticMaxCap::<CAP>.check_compatibility(&OVER_ITER)
-                => Err(MinOverflow::new_static(OVER_CAP)));
+                => Err(MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP)));
 
         panics!(bad_iter: StaticMaxCap::<CAP>.check_compatibility(&INVALID_ITER)
             => "Invalid size hint");
@@ -60,7 +60,7 @@ mod max_cap {
 
         check_eq!(compatible: StaticMaxCap::<CAP>.check_fit(&COMPAT_ITER) => Ok(()));
         check_eq!(overflow: StaticMaxCap::<CAP>.check_fit(&OVER_ITER)
-                => Err(FitOverflow::fixed_static(OVER_CAP)));
+                => Err(FitOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP)));
         check_eq!(overflow_unbounded: StaticMaxCap::<CAP>.check_fit(&OVER_ITER_UNBOUNDED)
                 => Err(FitOverflow::UNBOUNDED));
 
@@ -84,9 +84,9 @@ mod min_max_cap {
 
         check_eq!(compatible: StaticMinMaxCap::<CAP, CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
         check_eq!(overflow: StaticMinMaxCap::<CAP, CAP>.check_compatibility(&OVER_ITER)
-            => Err(StaticCapError::Overflow(MinOverflow::new_static(OVER_CAP))));
+            => Err(CompatError::Overflow(MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP))));
         check_eq!(underflow: StaticMinMaxCap::<CAP, CAP>.check_compatibility(&UNDER_ITER)
-            => Err(StaticCapError::Underflow(MaxUnderflow::new_static(UNDER_CAP))));
+            => Err(CompatError::Underflow(MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP))));
 
         panics!(bad_iter: StaticMinMaxCap::<CAP, CAP>.check_compatibility(&INVALID_ITER)
             => "Invalid size hint");
@@ -98,13 +98,16 @@ mod min_max_cap {
         check_eq!(compatible: StaticMinMaxCap::<CAP, CAP>.check_fit(&COMPAT_ITER) => Ok(()));
 
         check_eq!(underflow: StaticMinMaxCap::<CAP, CAP>.check_fit(&UNDER_ITER)
-            => Err(StaticFitError::<StaticMinMaxCap<CAP, CAP>>::Underflow(FitUnderflow::new_static(UNDER_CAP))));
+            => Err(FitError::Underflow(FitUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP))));
         check_eq!(overflow: StaticMinMaxCap::<CAP, CAP>.check_fit(&OVER_ITER)
-            => Err(StaticFitError::<StaticMinMaxCap<CAP, CAP>>::Overflow(FitOverflow::fixed_static(OVER_CAP))));
+            => Err(FitError::Overflow(FitOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP))));
         check_eq!(overflow_unbounded: StaticMinMaxCap::<CAP, CAP>.check_fit(&OVER_ITER_UNBOUNDED)
-            => Err(StaticFitError::<StaticMinMaxCap<CAP, CAP>>::Overflow(FitOverflow::UNBOUNDED)));
+            => Err(FitError::Overflow(FitOverflow::UNBOUNDED)));
         check_eq!(both: StaticMinMaxCap::<CAP, CAP>.check_fit(&BOTH_ITER)
-            => Err(STATIC_FIT_ERROR_BOTH));
+        => Err(FitError::Both(FitBoth::new(
+            FitOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP),
+            FitUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP)
+        ))));
 
         panics!(bad_iter: StaticMinMaxCap::<CAP, CAP>.check_fit(&INVALID_ITER)
             => "Invalid size hint");
@@ -126,9 +129,9 @@ mod exact_cap {
 
         check_eq!(compatible: StaticExactCap::<CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
         check_eq!(underflow: StaticExactCap::<CAP>.check_compatibility(&UNDER_ITER)
-            => Err(StaticCapError::<StaticExactCap<CAP>>::Underflow(MaxUnderflow::new_static(UNDER_CAP))));
+            => Err(StaticCapError::<StaticExactCap<CAP>>::Underflow(MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP))));
         check_eq!(overflow: StaticExactCap::<CAP>.check_compatibility(&OVER_ITER)
-            => Err(StaticCapError::<StaticExactCap<CAP>>::Overflow(MinOverflow::new_static(OVER_CAP))));
+            => Err(StaticCapError::<StaticExactCap<CAP>>::Overflow(MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP))));
 
         panics!(bad_iter: StaticExactCap::<CAP>.check_compatibility(&INVALID_ITER)
             => "Invalid size hint");
@@ -139,20 +142,17 @@ mod exact_cap {
 
         check_eq!(compatible: StaticExactCap::<CAP>.check_fit(&COMPAT_ITER) => Ok(()));
         check_eq!(underflow: StaticExactCap::<CAP>.check_fit(&UNDER_ITER)
-            => Err(StaticFitError::<StaticExactCap<CAP>>::Underflow(FitUnderflow::new_static(UNDER_CAP))));
+            => Err(FitError::Underflow(FitUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP))));
         check_eq!(overflow: StaticExactCap::<CAP>.check_fit(&OVER_ITER)
-            => Err(StaticFitError::<StaticExactCap<CAP>>::Overflow(FitOverflow::fixed_static(OVER_CAP))));
+            => Err(FitError::Overflow(FitOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP))));
         check_eq!(overflow_unbounded: StaticExactCap::<CAP>.check_fit(&OVER_ITER_UNBOUNDED)
-            => Err(StaticFitError::<StaticExactCap<CAP>>::Overflow(FitOverflow::UNBOUNDED)));
-
-        const STATIC_FIT_BOTH: FitBoth<StaticExactCap<CAP>, StaticExactCap<CAP>> =
-            FitBoth::from_parts_unchecked(FitOverflow::fixed_static(OVER_CAP), FitUnderflow::new_static(UNDER_CAP));
-
-        const STATIC_FIT_ERROR_BOTH: FitError<StaticExactCap<CAP>, StaticExactCap<CAP>> =
-            FitError::Both(STATIC_FIT_BOTH);
+            => Err(FitError::Overflow(FitOverflow::UNBOUNDED)));
 
         check_eq!(both: StaticExactCap::<CAP>.check_fit(&BOTH_ITER)
-            => Err(STATIC_FIT_ERROR_BOTH));
+        => Err(FitError::Both(FitBoth::new(
+            FitOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP),
+            FitUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP),
+        ))));
 
         panics!(bad_iter: StaticExactCap::<CAP>.check_fit(&INVALID_ITER)
             => "Invalid size hint");

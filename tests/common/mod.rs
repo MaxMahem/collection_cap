@@ -9,8 +9,7 @@ macro_rules! check_eq {
         fn $name() {
             let result = $res;
             let expected = $expected;
-
-            assert_eq!(result, expected);
+            assert_eq!(&result, &expected);
         }
     };
 }

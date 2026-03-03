@@ -1,6 +1,6 @@
-use core::ops::{Range, RangeFrom, RangeInclusive, RangeTo, RangeToInclusive};
+use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
-use crate::cap::variable::{MaxCapVal, MinCapVal, MinMaxCapVal};
+use crate::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCapVal};
 use crate::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG, VariableCap};
 
 impl VariableCap for RangeTo<usize> {
@@ -68,5 +68,16 @@ impl VariableCap for RangeInclusive<usize> {
             (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
             (start, end) => MinMaxCapVal::new(*start, *end),
         }
+    }
+}
+
+impl VariableCap for RangeFull {
+    type Cap = UnboundedCapVal;
+
+    /// Returns the capacity for this range.
+    ///
+    /// This is always [`UnboundedCapVal`].
+    fn capacity(&self) -> UnboundedCapVal {
+        UnboundedCapVal
     }
 }

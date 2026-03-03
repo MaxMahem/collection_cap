@@ -5,7 +5,6 @@ use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, Unbou
 use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
 use collection_cap::err::{FitError, FitOverflow};
 use collection_cap::{Capacity, VariableCap};
-use collection_cap::{MaxCap, MinCap};
 
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
@@ -124,7 +123,7 @@ mod min_max_cap {
         check_eq!(underflow: MIN_MAX_CAP.check_fit(&UNDER_ITER) => Err(VAR_FIT_ERROR_UNDERFLOW));
         check_eq!(overflow: MIN_MAX_CAP.check_fit(&OVER_ITER) => Err(VAR_FIT_ERROR_OVERFLOW));
         check_eq!(overflow_unbounded: MIN_MAX_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(FitOverflow::unbounded(MAX_CAP))));
-        check_eq!(both: MIN_MAX_CAP.check_fit(&BOTH_ITER) => Err(VAR_FIT_ERROR_BOTH));
+        check_eq!(both: MIN_MAX_CAP.check_fit(&BOTH_ITER) => Err(FitError::Both(collection_cap::err::FitBoth::new(VAR_FIT_OVERFLOW, VAR_FIT_UNDERFLOW))));
 
         panics!(bad_iter: MIN_MAX_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
     }
@@ -165,7 +164,7 @@ mod exact_cap {
         check_eq!(underflow: EXACT_CAP.check_fit(&UNDER_ITER) => Err(VAR_FIT_ERROR_UNDERFLOW));
         check_eq!(overflow: EXACT_CAP.check_fit(&OVER_ITER) => Err(VAR_FIT_ERROR_OVERFLOW));
         check_eq!(overflow_unbounded: EXACT_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(FitOverflow::unbounded(MAX_CAP))));
-        check_eq!(both: EXACT_CAP.check_fit(&BOTH_ITER) => Err(VAR_FIT_ERROR_BOTH));
+        check_eq!(both: EXACT_CAP.check_fit(&BOTH_ITER) => Err(FitError::Both(collection_cap::err::FitBoth::new(VAR_FIT_OVERFLOW, VAR_FIT_UNDERFLOW))));
 
         panics!(bad_iter: EXACT_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
     }

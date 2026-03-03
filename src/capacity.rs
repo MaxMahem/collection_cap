@@ -1,4 +1,4 @@
-use crate::cap::{MaxCapVal, MinCapVal};
+use core::ops::RangeBounds;
 
 /// A private module for internal implementation details.
 pub mod private {
@@ -35,6 +35,17 @@ pub trait Capacity: private::Sealed {
     /// The error type returned if an iterator is not guaranteed to fit within
     /// the capacity constraints.
     type FitError;
+    /// The type representing the minimum capacity bound.
+    type Min: Capacity + RangeBounds<usize>;
+
+    /// The type representing the maximum capacity bound.
+    type Max: Capacity + RangeBounds<usize>;
+
+    /// Returns the minimum capacity constraint.
+    fn min_cap(&self) -> Self::Min;
+
+    /// Returns the maximum capacity constraint.
+    fn max_cap(&self) -> Self::Max;
 
     /// Checks if `iter` is compatible with this capacity constraint.
     ///
@@ -74,42 +85,6 @@ pub trait Capacity: private::Sealed {
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
     where
         I: Iterator + ?Sized;
-}
-
-/// A type with a minimum capacity constraint.
-pub trait MinCap {
-    /// The minimum capacity.
-    fn min_cap(&self) -> MinCapVal;
-}
-
-/// A type with a const minimum capacity constraint.
-pub trait ConstMinCap: MinCap {
-    /// The minimum capacity.
-    const MIN_CAP: MinCapVal;
-}
-
-impl<C: ConstMinCap> MinCap for C {
-    fn min_cap(&self) -> MinCapVal {
-        Self::MIN_CAP
-    }
-}
-
-/// A type with a maximum capacity constraint.
-pub trait MaxCap {
-    /// The maximum capacity.
-    fn max_cap(&self) -> MaxCapVal;
-}
-
-/// A type with a const maximum capacity constraint.
-pub trait ConstMaxCap: MaxCap {
-    /// The maximum capacity.
-    const MAX_CAP: MaxCapVal;
-}
-
-impl<C: ConstMaxCap> MaxCap for C {
-    fn max_cap(&self) -> MaxCapVal {
-        Self::MAX_CAP
-    }
 }
 
 /// A type with an associated static capacity constraint.
