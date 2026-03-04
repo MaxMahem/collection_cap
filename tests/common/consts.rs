@@ -2,10 +2,7 @@
 
 use std::ops::{Range, RangeFrom};
 
-use collection_cap::Capacity;
-use collection_cap::cap::{
-    MaxCapVal, MinCapVal, MinMaxCapVal, StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap,
-};
+use collection_cap::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
 use collection_cap::err::{
     CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow, UpperBound,
 };

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub(crate) trait FoldMut: Iterator {
     fn fold_mut<C>(self, init: C, mut f: impl FnMut(&mut C, Self::Item)) -> C
     where
