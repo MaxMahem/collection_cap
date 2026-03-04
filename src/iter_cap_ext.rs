@@ -151,7 +151,7 @@ pub trait IterCapExt {
     /// let array_vec: ArrayVec<i32, 10> = ArrayVec::new();
     /// (0..10).ensure_fit_with(&array_vec).expect("Should fit");
     /// (0..11).ensure_fit_with(&array_vec).expect_err("Should not fit");
-    /// (0..10).filter(|_| true).ensure_fit_with(&array_vec)
+    /// (0..11).filter(|_| true).ensure_fit_with(&array_vec)
     ///     .expect_err("Should be a false negative");
     /// ```
     fn ensure_fit_with<CAP>(&self, cap: CAP) -> Result<(), <CAP::Cap as Capacity>::FitError>

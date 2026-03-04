@@ -2,7 +2,12 @@ use core::ops::RangeBounds;
 
 use crate::internal::Sealed;
 
-/// A type with a dynamic capacity constraint, that is mutable or determined at runtime.
+/// A type with a capacity constraint.
+///
+/// A capacity constraint represents the range of valid element counts for a
+/// collection. It is useful for pre-checking if an iterator is compatible
+/// before collecting the iterator into a new collection, or extending an
+/// existing collection with it.
 ///
 /// # Note on Compatibility
 ///
@@ -11,12 +16,12 @@ use crate::internal::Sealed;
 /// according to the iterator's [`Iterator::size_hint`]. Put another way, an
 /// iterator's size hint provides the range of possible element counts it could
 /// have when fully consumed, and to be compatible, at least one value in that
-/// range must overlap with the capacity range.
+/// range must be within the capacity range.
 ///
 /// A compatible iterator is not guaranteed to actually fit within the capacity
 /// constraints when fully consumed, unless it implements [`ExactSizeIterator`],
 /// or the entire range reported by [`Iterator::size_hint`] is within the capacity
-/// constraints (see [`Capacity::check_fit`] to test this).
+/// constraints (see [`Capacity::check_fit`] to test for this case instead).
 ///
 /// However, an iterator that is not compatible is guaranteed to not fit within
 /// the capacity constraints when fully consumed. That is, there can be false
@@ -27,19 +32,17 @@ use crate::internal::Sealed;
 /// ```rust
 /// # use collection_cap::Capacity;
 /// # use collection_cap::cap::StaticMinCap;
-/// let require_10 = StaticMinCap::<10>;
+/// let produce_10 = (0..10).filter(|_| true);
+/// assert!(produce_10.size_hint() == (0, Some(10)));
+/// StaticMinCap::<10>.check_compatibility(&produce_10).expect("Should be compatible");
 ///
-/// let at_most_10 = (0..10).filter(|_| false);
-/// assert!(at_most_10.size_hint() == (0, Some(10)));
-/// require_10.check_compatibility(&at_most_10).expect("Should be compatible");
-///
-/// let at_most_9 = (0..9).filter(|_| false);
-/// assert!(at_most_9.size_hint() == (0, Some(9)));
-/// require_10.check_compatibility(&at_most_9).expect_err("Should not be compatible");
+/// let produce_9 = (0..9).filter(|_| true);
+/// assert!(produce_9.size_hint() == (0, Some(9)));
+/// StaticMinCap::<10>.check_compatibility(&produce_9).expect_err("Should not be compatible");
 ///
 /// let produce_0 = (0..100).filter(|_| false);
 /// assert!(produce_0.size_hint() == (0, Some(100)));
-/// require_10.check_compatibility(&produce_0).expect("Should be compatible");
+/// StaticMinCap::<10>.check_compatibility(&produce_0).expect("Should be a false positive");
 /// ```
 ///
 /// # Note on Fit
@@ -48,8 +51,8 @@ use crate::internal::Sealed;
 /// fully iterated, all possible counts of elements it could produce lies
 /// within the capacity constraints, according to the iterator's [`Iterator::size_hint`].
 /// Put another way, an iterator's size hint provides the range of possible element
-/// counts it could have when fully consumed, and to be compatible, all values in that
-/// range must lie within the capacity constraints.
+/// counts it could have when fully consumed, and to fit, the entire range must lie
+/// within the capacity constraints.
 ///
 /// It is possible for an iterator to not 'fit' within the capacity constraints,
 /// under this definition, but still generate a count of elements that lies within
@@ -61,28 +64,17 @@ use crate::internal::Sealed;
 /// ```rust
 /// # use collection_cap::Capacity;
 /// # use collection_cap::cap::StaticMaxCap;
-/// let max_10 = StaticMaxCap::<10>;
+/// let produce_0 = (0..10).filter(|_| false);
+/// assert!(produce_0.size_hint() == (0, Some(10)));
+/// StaticMaxCap::<10>.check_fit(&produce_0).expect("Should fit");
 ///
-/// let exactly_10 = 0..10;
-/// assert!(exactly_10.size_hint() == (10, Some(10)));
-/// max_10.check_fit(&exactly_10).expect("Should fit");
+/// let produce_0 = (0..11).filter(|_| false);
+/// assert!(produce_0.size_hint() == (0, Some(11)));
+/// StaticMaxCap::<10>.check_fit(&produce_0).expect_err("Should not fit");
 ///
-/// let exactly_11 = 0..11;
-/// assert!(exactly_11.size_hint() == (11, Some(11)));
-/// max_10.check_fit(&exactly_11).expect_err("Should not fit");
-/// ```
-///
-/// False negatives are possible, [`Capacity::check_fit`] requires that the
-/// entire range reported by [`Iterator::size_hint`] is within the capacity
-/// constraints. Valid iterators may still fail the check.
-///
-/// ```rust
-/// # use collection_cap::{Capacity, cap::StaticMinCap};
-/// let require_10_to_inf = StaticMinCap::<10>;
-/// let produces_10 = (0..10).filter(|_| true);
-/// assert!(produces_10.size_hint() == (0, Some(10)), "Range is [0, 10]");
-/// require_10_to_inf.check_fit(&produces_10)
-///     .expect_err("Range of [0, 10] should not be entirely within [10, inf)");
+/// let produce_20 = (0..20).filter(|_| true);
+/// assert!(produce_20.size_hint() == (0, Some(20)));
+/// StaticMaxCap::<10>.check_fit(&produce_20).expect_err("Should be a false negative");
 /// ```
 ///
 /// # Note on `ExactSizeIterator`
@@ -132,13 +124,13 @@ pub trait Capacity: Sealed {
     ///
     /// ```rust
     /// # use collection_cap::{Capacity, cap::StaticMinCap};
-    /// let require_10 = StaticMinCap::<10>;
-    ///
-    /// require_10.check_compatibility(&(0..10)).expect("Should be compatible");
-    /// require_10.check_compatibility(&(0..5)).expect_err("Should not be compatible");
+    /// StaticMinCap::<10>.check_compatibility(&(0..10))
+    ///     .expect("Should be compatible");
+    /// StaticMinCap::<10>.check_compatibility(&(0..5))
+    ///     .expect_err("Should not be compatible");
     ///
     /// let produce_0 = (0..100).filter(|_| false);
-    /// require_10.check_compatibility(&produce_0)
+    /// StaticMinCap::<10>.check_compatibility(&produce_0)
     ///     .expect("Should be a false positive");
     /// ```
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
@@ -166,15 +158,12 @@ pub trait Capacity: Sealed {
     ///
     /// ```rust
     /// # use collection_cap::{Capacity, cap::StaticMaxCap, cap::MinCapVal};
-    /// let max_10 = StaticMaxCap::<10>;
-    ///
-    /// max_10.check_fit(&(0..10)).expect("Should fit");
-    /// max_10.check_fit(&(0..11)).expect_err("Should not fit");
+    /// StaticMaxCap::<10>.check_fit(&(0..10)).expect("Should fit");
+    /// StaticMaxCap::<10>.check_fit(&(0..11)).expect_err("Should not fit");
     ///
     /// let require_10 = MinCapVal(10);
-    /// let produce_15 = (0..15).filter(|_| true);
-    /// require_10.check_fit(&produce_15)
-    ///     .expect_err("Should be a false negative");
+    /// let produce_10 = (0..10).filter(|_| true);
+    /// require_10.check_fit(&produce_10).expect_err("Should be a false negative");
     /// ```
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
     where
