@@ -202,3 +202,11 @@ impl<V: VariableCap + ?Sized> VariableCap for &V {
         (**self).capacity()
     }
 }
+
+impl<V: VariableCap + ?Sized> VariableCap for &mut V {
+    type Cap = V::Cap;
+
+    fn capacity(&self) -> Self::Cap {
+        (**self).capacity()
+    }
+}
