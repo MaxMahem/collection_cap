@@ -1,104 +1,84 @@
-use core::convert::Infallible;
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
-use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
-use crate::err::{CapError, Overflows, Underflows};
-use crate::{Capacity, EMPTY_RANGE_MSG, INVALID_RANGE_MSG};
+use crate::VariableCap;
+use crate::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCap};
+use crate::internal::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG};
 
-impl Capacity for RangeTo<usize> {
-    type Error = Overflows;
+impl VariableCap for RangeTo<usize> {
+    type Cap = MaxCapVal;
 
-    /// Checks if the given iterator is compatible with the range.
+    /// Returns the capacity for this range.
     ///
     /// # Panics
     ///
-    /// Panics if:
-    /// - `self.end = 0` - range is empty
-    /// - `iter`'s [size hint](Iterator::size_hint) is invalid.
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
+    /// Panics if `self.end == 0` (range is empty).
+    fn capacity(&self) -> MaxCapVal {
         #[expect(clippy::option_if_let_else)]
         match usize::checked_sub(self.end, 1) {
             None => panic!("{EMPTY_RANGE_MSG}"),
-            Some(end) => MaxCapVal(end).check_compatability(iter),
+            Some(end) => MaxCapVal(end),
         }
     }
 }
 
-impl Capacity for RangeToInclusive<usize> {
-    type Error = Overflows;
+impl VariableCap for RangeToInclusive<usize> {
+    type Cap = MaxCapVal;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
-        MaxCapVal(self.end).check_compatability(iter)
+    fn capacity(&self) -> MaxCapVal {
+        MaxCapVal(self.end)
     }
 }
 
-impl Capacity for RangeFrom<usize> {
-    type Error = Underflows;
+impl VariableCap for RangeFrom<usize> {
+    type Cap = MinCapVal;
 
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
-        MinCapVal(self.start).check_compatability(iter)
+    fn capacity(&self) -> MinCapVal {
+        MinCapVal(self.start)
     }
 }
 
-impl Capacity for Range<usize> {
-    type Error = CapError;
+impl VariableCap for Range<usize> {
+    type Cap = MinMaxCapVal;
 
-    /// Checks if the given iterator is compatible with the range.
+    /// Returns the capacity for this range.
     ///
     /// # Panics
     ///
     /// Panics if:
-    /// - `self.start() == self.end()` - range is empty
-    /// - `self.start() > self.end()` - range is invalid
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
+    /// - `self.start == self.end` — range is empty
+    /// - `self.start > self.end` — range is invalid
+    fn capacity(&self) -> MinMaxCapVal {
         match (self.start, self.end) {
             (start, end) if start == end => panic!("{EMPTY_RANGE_MSG}"),
             (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
-            (start, end) => MinMaxCapVal::new(start, end.saturating_sub(1)).check_compatability(iter),
+            (start, end) => MinMaxCapVal::new(start, end.saturating_sub(1)),
         }
     }
 }
 
-impl Capacity for RangeInclusive<usize> {
-    type Error = CapError;
+impl VariableCap for RangeInclusive<usize> {
+    type Cap = MinMaxCapVal;
 
-    /// Checks if the iterator is compatible with the inclusive range.
+    /// Returns the capacity for this range.
     ///
     /// # Panics
     ///
     /// Panics if `self.start() > self.end()`.
-    fn check_compatability<I>(&self, iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
+    fn capacity(&self) -> MinMaxCapVal {
         match (self.start(), self.end()) {
             (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
-            (start, end) => MinMaxCapVal::new(*start, *end).check_compatability(iter),
+            (start, end) => MinMaxCapVal::new(*start, *end),
         }
     }
 }
 
-impl Capacity for RangeFull {
-    type Error = Infallible;
+impl VariableCap for RangeFull {
+    type Cap = UnboundedCap;
 
-    /// Always returns `Ok(())` because [`RangeFull`] declares an open-ended
-    /// capacity constraint, with no min or max capacity.
-    fn check_compatability<I>(&self, _iter: &I) -> Result<(), Self::Error>
-    where
-        I: Iterator + ?Sized,
-    {
-        Ok(())
+    /// Returns the capacity for this range.
+    ///
+    /// This is always [`UnboundedCapVal`].
+    fn capacity(&self) -> UnboundedCap {
+        UnboundedCap
     }
 }

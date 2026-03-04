@@ -1,19 +1,19 @@
 use arrayvec::ArrayVec;
 use tap::Pipe;
 
-use crate::cap::MaxCapVal;
-use crate::err::Overflows;
-use crate::{StaticCap, Capacity};
+use crate::cap::{MaxCapVal, StaticMaxCap};
+use crate::{StaticCap, VariableCap};
 
-impl<T, const N: usize> Capacity for ArrayVec<T, N> {
-    type Error = Overflows;
+impl<T, const N: usize> VariableCap for ArrayVec<T, N> {
+    type Cap = MaxCapVal;
 
-    fn check_compatability<I: Iterator + ?Sized>(&self, iter: &I) -> Result<(), Self::Error> {
-        self.remaining_capacity().pipe(MaxCapVal).check_compatability(iter)
+    fn capacity(&self) -> MaxCapVal {
+        self.remaining_capacity().pipe(MaxCapVal)
     }
 }
 
 impl<T, const N: usize> StaticCap for ArrayVec<T, N> {
-    type Cap = MaxCapVal;
-    const CAP: Self::Cap = MaxCapVal(N);
+    type Cap = StaticMaxCap<N>;
+
+    const CAP: Self::Cap = StaticMaxCap {};
 }

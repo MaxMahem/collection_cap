@@ -1,3 +1,7 @@
-mod val;
+mod bound;
+mod compat;
+mod fit;
 
-pub use val::*;
+pub use bound::*;
+pub use compat::*;
+pub use fit::*;
