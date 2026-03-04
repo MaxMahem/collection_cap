@@ -124,3 +124,4 @@ It's on crates.io: [collection_cap](https://crates.io/crates/collection_cap)
 ### Features
 
 - `arrayvec`: Implements `StaticCap` and `VariableCap` for `ArrayVec`.
+- `alloc`: Adds the `SpareCapacityExt` extension trait for `Vec`, `String`, and `VecDeque` to easily get their remaining capacity as a `MaxCapVal`.

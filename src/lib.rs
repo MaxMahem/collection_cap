@@ -5,6 +5,9 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 mod internal;
 
 pub(crate) mod iter;
@@ -16,6 +19,9 @@ mod iter_cap_ext;
 
 pub use capacity::*;
 pub use iter_cap_ext::*;
+
+#[cfg(feature = "alloc")]
+pub use impls::alloc_impl::*;
 
 /// [`Capacity`] constraints types.
 pub mod cap;

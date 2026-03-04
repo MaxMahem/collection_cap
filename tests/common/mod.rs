@@ -1,15 +1,11 @@
-#![allow(unused_macros)]
-#![allow(unused_imports)]
-
 pub mod consts;
+pub mod iter;
 
 macro_rules! check_eq {
     ($name:ident: $res:expr => $expected:expr) => {
         #[test]
         fn $name() {
-            let result = $res;
-            let expected = $expected;
-            assert_eq!(&result, &expected);
+            assert_eq!(&$res, &$expected);
         }
     };
 }
