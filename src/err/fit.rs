@@ -204,7 +204,7 @@ impl<MIN, MAX> FitErrorSpan<MIN, MAX> {
         Self { underflow, overflow }
     }
 
-    /// Creates a new [`FitUnderOver`] from `overflow` and `underflow`
+    /// Creates a new [`FitErrorSpan`] from `overflow` and `underflow`
     ///
     /// # Panics
     ///

@@ -12,83 +12,110 @@ This crate is `no_std` compatible and contains no `unsafe` code.
 
 ## Core Traits
 
-- **`Capacity`**: Validates iterator compatibility against a capacity constraint.
-- **`StaticCap`**: Declares a compile-time capacity constraint.
-- **`VariableCap`**: Declares a runtime capacity constraint.
+- [**`Capacity`**](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html): Validates iterator compatibility against a capacity constraint.
+- [**`StaticCap`**](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html): Declares a compile-time capacity constraint.
+- [**`VariableCap`**](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html): Declares a runtime capacity constraint.
 
 Implementations are provided for `Array` by default. See the [features](#features) section for more conditional enabled implementations.
 
-## Static Capacity
+### [`StaticCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html)
 
-Types that have a compile-time capacity constraint (like arrays) can implement `StaticCap`. The constraint can then be checked using the `IterCapExt` extension trait. If a fully consumed iterator violates the capacity constraint, an error is returned. The specific error type is defined by the `Capacity` implementation.
+Types that have a compile-time capacity constraint (like arrays) can implement [`StaticCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html). And select a static [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) implementation to use. This is most useful for pre-validating collection type operations.
 
-This is most useful for pre-validating collection type operations.
+```rust
+use collection_cap::StaticCap;
+use collection_cap::cap::StaticMaxCap;
+
+struct MyStaticCollection;
+
+impl StaticCap for MyStaticCollection {
+    type Cap = StaticMaxCap<10>;
+    const CAP: Self::Cap = StaticMaxCap::<10>;
+}
+```
+
+### [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html)
+
+Types that have a capacity constraint that can change or is determined at runtime (like `ArrayVec`) can implement [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html). And return a [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) implementation that reflects the current capacity constraint. This is most useful for pre-validating extension operations.
+
+```rust
+use collection_cap::VariableCap;
+use collection_cap::cap::MaxCapVal;
+
+struct MyDynamicCollection { remaining: usize }
+
+impl VariableCap for MyDynamicCollection {
+    type Cap = MaxCapVal;
+    fn capacity(&self) -> Self::Cap { MaxCapVal(self.remaining) }
+}
+```
+
+### [`IterCapExt`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.IterCapExt.html)
+
+While the [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) trait can be used directly, it is most useful when combined with the [`IterCapExt`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.IterCapExt.html) extension trait. This trait provides a number of methods for checking iterator compatibility and fit.
 
 ```rust
 use collection_cap::IterCapExt;
-
-// an array can accept no more or less than its size
-(0..10).ensure_compatible::<[i32; 10]>().expect("Should be compatible");
-(0..9).ensure_compatible::<[i32; 10]>().expect_err("Should underflow");
-(0..11).ensure_compatible::<[i32; 10]>().expect_err("Should overflow");
-```
-
-```rust
 use arrayvec::ArrayVec;
-use collection_cap::IterCapExt;
 
-let mut vec = ArrayVec::<i32, 10>::new();
+(0..10).ensure_compatible::<[i32; 10]>().expect("Exact match");
+(0..11).ensure_compatible::<ArrayVec<i32, 10>>().expect_err("Overflow");
 
-// an arrayvec can accept up to its capacity
-(0..10).ensure_compatible::<ArrayVec<i32, 10>>().expect("Should be compatible");
-(0..11).ensure_compatible::<ArrayVec<i32, 10>>().expect_err("Should overflow");
+let mut vec: ArrayVec<i32, 10> = (0..5).collect();
+(0..3).ensure_compatible_with(&vec).expect("Fits remaining");
+(0..6).ensure_compatible_with(&vec).expect_err("Too many");
 ```
 
-## Variable Capacity
+### Capacity types
 
-Types that have a capacity constraint that can change or is determined at runtime (like `ArrayVec`) can implement `VariableCap`. The constraint can then be checked using the `IterCapExt` extension trait. If a fully consumed iterator violates the capacity constraint, an error is returned. The specific error type is defined by the `Capacity` implementation.
+The following [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) implementations are provided.
+
+| Represents | Variable | Static | Range equivalent |
+| :--- | :--- | :--- | :--- |
+| Minimum | [`MinCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.MinCapVal.html) | [`StaticMinCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.StaticMinCap.html) | `min..` |
+| Maximum | [`MaxCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.MaxCapVal.html) | [`StaticMaxCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.StaticMaxCap.html) | `..=max` |
+| Min & Max | [`MinMaxCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.MinMaxCapVal.html) | [`StaticMinMaxCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.StaticMinMaxCap.html) | `min..=max` |
+| Exact | [`ExactCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.ExactCapVal.html) | [`StaticExactCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.StaticExactCap.html) | `size..=size` |
+| Unbounded | [`UnboundedCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.UnboundedCap.html) | [`UnboundedCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.UnboundedCap.html) | `..` |
+
+These types can be used either directly, or as a type parameter for [`StaticCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html) or [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html). [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) is also implemented for all std range types, as indicated.
 
 ```rust
 use collection_cap::IterCapExt;
-use arrayvec::ArrayVec;
+use collection_cap::cap::StaticExactCap;
 
-let mut ten_element_vec: ArrayVec<i32, 10> = (0..5).collect();
-assert_eq!(ten_element_vec.remaining_capacity(), 5);
+(0..5).ensure_compatible_with(..=5).expect("should be compatible");
+(0..6).ensure_compatible_with(..=5).expect_err("should not be compatible");
 
-(0..3).ensure_compatible_with(&ten_element_vec).expect("3 more elements should be compatible");
-(0..6).ensure_compatible_with(&ten_element_vec).expect_err("6 more elements should not be compatible");
+(0..5).ensure_compatible::<StaticExactCap<5>>().expect("should be compatible");
+(0..6).ensure_compatible::<StaticExactCap<5>>().expect_err("should not be compatible");
 ```
 
-To specify a capacity constraint directly, you can use any type that implements `Capacity`. Including purpose-built types like `MinCapVal`, `MaxCapVal`, `MinMaxCapVal`, and `ExactCapVal`. Or any std range type.
+## Capacity 'Compatibility'
+
+Note that for non-[`ExactSizeIterator`](https://doc.rust-lang.org/std/iter/trait.ExactSizeIterator.html), these checks only guarantee that an iterator's [`size_hint`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint) is compatible with the given capacity. They do not guarantee that an iterator will actually fit the capacity during iteration, as the [`size_hint`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint) only reports the minimum and maximum number of elements an iterator *might* produce. An error is only returned if the iterator's [`size_hint`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint) indicates that it *cannot* fit the capacity constraint.
+
+For a stronger guarantee, [`IterCapExt::ensure_fit`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.IterCapExt.html#tymethod.ensure_fit) and [`IterCapExt::ensure_fits_into`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.IterCapExt.html#tymethod.ensure_fits_into) can be used. These methods check if the *entire* range reported by an iterator's [`size_hint`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#method.size_hint) fits within the capacity constraints. If any possible count of elements could violate the constraint, these methods will return an error.
+
+Put another way, `ensure_compatible` has the possibility of a false positive, while `ensure_fit` has the possibility of a false negative.
 
 ```rust
 use collection_cap::IterCapExt;
 
-(0..5).ensure_compatible_with(..=5).expect("5 elements should be compatible");
-(0..6).ensure_compatible_with(..=5).expect_err("6 elements should not be compatible");
+let max_5_elements = ..5;
+
+let produces_10 = (0..10).filter(|_| true);
+assert_eq!(produces_10.size_hint(), (0, Some(10)), "Can produce 0 to 10 elements");
+produces_10.ensure_compatible_with(max_5_elements)
+    .expect("Compatibility only requires that it MIGHT fit");
+
+let produces_3 = (0..10).filter(|x| *x < 3);
+assert_eq!(produces_3.size_hint(), (0, Some(10)), "Can produce 0 to 10 elements");
+produces_3.ensure_fits_into(max_5_elements)
+    .expect_err("Fit requires that it MUST fit");
 ```
 
-### Capacity Compatibility
-
-Note that for non-exact size iterators, these checks only guarantee that an iterator's `size_hint` is compatible with the given capacity. They do not guarantee that an iterator will actually fit the capacity during iteration, as the `size_hint` only reports the minimum and maximum number of elements an iterator *might* produce. An error is only returned if the iterator's `size_hint` indicates that it *cannot* fit the capacity constraint.
-
-A 'universal' size hint (`(0, None)`), for example, indicates that the iterator can produce any number of elements, and so is compatible with any capacity constraint.
-
-```rust
-use collection_cap::IterCapExt;
-
-let infinite_iter = std::iter::repeat(0).filter(|_| true);
-assert_eq!(infinite_iter.size_hint(), (0, None), "Should produce A 'universal' size hint"); 
-
-infinite_iter.ensure_compatible::<[i32; 10]>()
-    .expect("A 'universal' size hint is compatible with any capacity");
-```
-
-If these methods return an error, however, it guarantees that the iterator's `size_hint` is incompatible with the capacity constraints.
-
-## Implementing for local types
-
-Using the traits for local types is straightforward. If the type has a known static capacity when empty, implement `StaticCap` using one of the appropriate `Capacity` types and `const CAP` value. If the type's capacity is mutable at runtime, implement `VariableCap` with a `capacity()` method that returns the appropriate `Capacity` type.
+See the [`Capacity#note-on-fit`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html#note-on-fit) documentation for more details.
 
 ## Installation
 

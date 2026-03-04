@@ -7,7 +7,8 @@ use crate::internal::Sealed;
 /// A capacity constraint represents the range of valid element counts for a
 /// collection. It is useful for pre-checking if an iterator is compatible
 /// before collecting the iterator into a new collection, or extending an
-/// existing collection with it.
+/// existing collection with it. See [`crate::IterCapExt`] for the primary way to
+/// use these constraints with iterators.
 ///
 /// # Note on Compatibility
 ///
@@ -104,7 +105,7 @@ pub trait Capacity: Sealed {
 
     /// Checks if `iter` is compatible with this capacity constraint.
     ///
-    /// See [type-level documentation](Self#note-on-compatibility) for more
+    /// See [the Note on Compatibility](Self#note-on-compatibility) for more
     /// details.
     ///
     /// # Arguments
@@ -139,7 +140,7 @@ pub trait Capacity: Sealed {
 
     /// Checks if `iter` is guaranteed to fit within the capacity constraints.
     ///
-    /// See [type-level documentation](Self#note-on-fit) for more details.
+    /// See [the Note on Fit](Self#note-on-fit) for more details.
     ///
     /// # Arguments
     ///

@@ -15,7 +15,7 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// [`C::Error`](Capacity::Error) if the iterator is not compatible with the
+    /// [`C::Cap::Error`](Capacity::Error) if the iterator is not compatible with the
     /// capacity constraints.
     ///
     /// # Panics
@@ -95,7 +95,7 @@ pub trait IterCapExt {
     ///
     /// # Errors
     ///
-    /// [`CAP::FitError`](Capacity::FitError) if the iterator is not guaranteed to
+    /// [`CAP::Cap::FitError`](Capacity::FitError) if the iterator is not guaranteed to
     /// fit within the capacity constraints.
     ///
     /// # Panics
@@ -149,12 +149,12 @@ pub trait IterCapExt {
     /// # use collection_cap::IterCapExt;
     /// # use arrayvec::ArrayVec;
     /// let array_vec: ArrayVec<i32, 10> = ArrayVec::new();
-    /// (0..10).ensure_fit_with(&array_vec).expect("Should fit");
-    /// (0..11).ensure_fit_with(&array_vec).expect_err("Should not fit");
-    /// (0..11).filter(|_| true).ensure_fit_with(&array_vec)
+    /// (0..10).ensure_fits_into(&array_vec).expect("Should fit");
+    /// (0..11).ensure_fits_into(&array_vec).expect_err("Should not fit");
+    /// (0..11).filter(|_| true).ensure_fits_into(&array_vec)
     ///     .expect_err("Should be a false negative");
     /// ```
-    fn ensure_fit_with<CAP>(&self, cap: CAP) -> Result<(), <CAP::Cap as Capacity>::FitError>
+    fn ensure_fits_into<CAP>(&self, cap: CAP) -> Result<(), <CAP::Cap as Capacity>::FitError>
     where
         Self: Iterator,
         CAP: VariableCap,
