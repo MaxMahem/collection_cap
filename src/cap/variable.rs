@@ -72,6 +72,11 @@ impl RangeBounds<usize> for MinCapVal {
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into)]
 pub struct MaxCapVal(pub usize);
 
+impl MaxCapVal {
+    /// A capacity constraint representing a maximum of zero elements.
+    pub const ZERO: Self = Self(0);
+}
+
 impl Sealed for MaxCapVal {}
 
 impl Capacity for MaxCapVal {
@@ -139,6 +144,9 @@ pub struct MinMaxCapVal {
 }
 
 impl MinMaxCapVal {
+    /// A capacity constraint requiring exactly zero elements.
+    pub const ZERO: Self = Self::new_unchecked(0, 0);
+
     /// Internal unchecked constructor.
     #[must_use]
     pub(crate) const fn new_unchecked(min: usize, max: usize) -> Self {
@@ -271,6 +279,11 @@ impl From<ExactCapVal> for MinMaxCapVal {
 /// A runtime constraint specifying an exact capacity.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, From, Into)]
 pub struct ExactCapVal(pub usize);
+
+impl ExactCapVal {
+    /// A capacity constraint representing exactly zero elements.
+    pub const ZERO: Self = Self(0);
+}
 
 impl Sealed for ExactCapVal {}
 
