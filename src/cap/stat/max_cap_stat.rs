@@ -60,7 +60,7 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
     {
         match iter.valid_size_hint() {
             (min_size, _) if !self.contains(&min_size) // fmt
-                => MinOverflow::new_unchecked(min_size).into_err(),
+                => MinOverflow::from_parts(min_size, Self).into_err(),
             _ => Ok!(),
         }
     }
@@ -71,7 +71,7 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
     {
         match iter.valid_size_hint() {
             (_, Some(max)) if !self.contains(&max) // fmt
-                => MaxOverflow::<Self>::fixed_unchecked(max).into_err(),
+                => MaxOverflow::from_parts(max, Self).into_err(),
             (_, None) => Err(MaxOverflow::<Self>::UNBOUNDED),
             _ => Ok!(),
         }

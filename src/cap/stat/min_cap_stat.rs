@@ -60,7 +60,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
     {
         match iter.valid_size_hint() {
             (_, Some(max)) if !self.contains(&max) // fmt
-                => MaxUnderflow::new_unchecked(max).into_err(),
+                => MaxUnderflow::from_parts(max, Self).into_err(),
             _ => Ok!(),
         }
     }
@@ -71,7 +71,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
     {
         match iter.valid_size_hint() {
             (min, _) if !self.contains(&min) // fmt
-                => MinUnderflow::new_unchecked(min).into_err(),
+                => MinUnderflow::from_parts(min, Self).into_err(),
             _ => Ok!(),
         }
     }

@@ -1,8 +1,5 @@
-use core::ops::RangeBounds;
-
-use crate::cap::{MaxCapVal, MinCapVal};
+use crate::cap::{MaxCapVal, MinCapVal, StaticMaxCap, StaticMinCap};
 use crate::err::UpperBound;
-use crate::{Capacity, StaticCap};
 
 /// A [`FitError`] indicating that an [`Iterator`]'s minimum size is
 /// below the minimum capacity required.
@@ -63,23 +60,21 @@ impl<CAP> MinUnderflow<CAP> {
     }
 }
 
-impl<CAP: StaticCap<Cap = CAP> + Capacity> MinUnderflow<CAP> {
-    /// Private unchecked constructor.
-    #[must_use]
-    pub(crate) const fn new_unchecked(min_size: usize) -> Self {
-        Self::from_parts(min_size, CAP::CAP)
-    }
-
-    /// Creates a new [`MinUnderflow`] for a static capacity.
+impl<const MIN: usize> MinUnderflow<StaticMinCap<MIN>> {
+    /// Creates a new [`MinUnderflow`] for a static minimum capacity.
+    ///
+    /// # Arguments
+    ///
+    /// - `min_size`: The iterator's minimum size.
     ///
     /// # Panics
     ///
-    /// Panics if the capacity check is not violated.
+    /// Panics if `min_size` >= `MIN`.
     #[must_use]
-    pub fn new(min_size: usize) -> Self {
-        match CAP::CAP.min_cap().contains(&min_size) {
-            true => panic!("min_size must be < C::MIN_CAP"),
-            false => Self::new_unchecked(min_size),
+    pub const fn new(min_size: usize) -> Self {
+        match min_size < MIN {
+            true => Self::from_parts(min_size, StaticMinCap),
+            false => panic!("min_size must be < MIN"),
         }
     }
 }
@@ -137,10 +132,16 @@ impl MaxOverflow<MaxCapVal> {
 }
 
 impl<CAP> MaxOverflow<CAP> {
-    /// Internal unchecked wrapper.
+    /// Internal unchecked wrapper for a fixed max size.
     #[must_use]
     pub(crate) const fn from_parts(max_size: usize, max_cap: CAP) -> Self {
         Self { max_size: UpperBound::Fixed(max_size), max_cap }
+    }
+
+    /// Internal unchecked constructor for an unbounded iterator.
+    #[must_use]
+    pub(crate) const fn from_parts_unbounded(max_cap: CAP) -> Self {
+        Self { max_size: UpperBound::Unbounded, max_cap }
     }
 
     /// The maximum number of elements the iterator could produce.
@@ -155,28 +156,29 @@ impl<CAP> MaxOverflow<CAP> {
     }
 }
 
-impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxOverflow<CAP> {
-    /// Private unchecked constructor.
-    #[must_use]
-    pub(crate) const fn fixed_unchecked(max_size: usize) -> Self {
-        Self { max_size: UpperBound::Fixed(max_size), max_cap: CAP::CAP }
-    }
+impl<const MAX: usize> MaxOverflow<StaticMaxCap<MAX>> {
+    /// Creates a new [`MaxOverflow`] for a static maximum capacity where the iterator
+    /// is unbounded.
+    pub const UNBOUNDED: Self = Self { max_size: UpperBound::Unbounded, max_cap: StaticMaxCap };
 
-    /// Creates a new [`MaxOverflow`] for a static capacity.
+    /// Creates a new [`MaxOverflow`] based on `max_size` for a static maximum capacity.
+    ///
+    /// For an unbounded iterator, use [`Self::UNBOUNDED`] instead.
+    ///
+    /// # Arguments
+    ///
+    /// - `max_size`: The iterator's maximum size.
     ///
     /// # Panics
     ///
-    /// Panics if the capacity check is not violated.
+    /// Panics if `max_size` <= `MAX`.
     #[must_use]
-    pub fn fixed(max_size: usize) -> Self {
-        match CAP::CAP.max_cap().contains(&max_size) {
-            true => panic!("max_size must be > C::MAX_CAP"),
-            false => Self::fixed_unchecked(max_size),
+    pub const fn fixed(max_size: usize) -> Self {
+        match max_size > MAX {
+            true => Self::from_parts(max_size, StaticMaxCap),
+            false => panic!("max_size must be > MAX"),
         }
     }
-
-    /// A [`MaxOverflow`] where the iterator's maximum size is unbounded.
-    pub const UNBOUNDED: Self = Self { max_size: UpperBound::Unbounded, max_cap: CAP::CAP };
 }
 
 /// A [`FitError`] indicating that an [`Iterator`]'s size hint range
