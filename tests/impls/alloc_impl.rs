@@ -31,7 +31,7 @@ macro_rules! test_spare_capacity_full {
         fn spare_capacity_when_full_is_zero() {
             let c = (0..CAP).map_to_default().fold_mut(<$type>::with_capacity(CAP), <$type>::$push);
 
-            assert_eq!(c.spare_capacity(), ZERO_MAX_CAP_VAL);
+            assert_eq!(c.spare_capacity(), MaxCapVal::ZERO);
         }
     };
 }

@@ -21,8 +21,6 @@ pub const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
 pub const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
 pub const MIN_MAX_CAP_VAL: MinMaxCapVal = MinMaxCapVal::new(CAP, CAP);
 
-pub const ZERO_MAX_CAP_VAL: MaxCapVal = MaxCapVal(0);
-
 pub const MIN_OVERFLOWS: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
 pub const MAX_UNDERFLOWS: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
 pub const CAP_ERROR_OVERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Overflow(MIN_OVERFLOWS);

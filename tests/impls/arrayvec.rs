@@ -19,4 +19,4 @@ fn variable_capacity_decreases() {
 }
 
 check_eq!(variable_capacity_full: VariableCap::capacity(&ArrayVec::from([0; CAP])) 
-    => ZERO_MAX_CAP_VAL);
+    => MaxCapVal::ZERO);

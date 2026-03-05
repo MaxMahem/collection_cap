@@ -55,6 +55,7 @@ mod max_cap {
     check_eq!(from_static: MaxCapVal::from(StaticMaxCap::<CAP>) => MAX_CAP);
     check_eq!(min_cap: MAX_CAP.min_cap() => UnboundedCap);
     check_eq!(max_cap: MAX_CAP.max_cap() => MAX_CAP);
+    check_eq!(zero: MaxCapVal::ZERO => MaxCapVal(0));
 
     mod range_bounds {
         use super::*;
@@ -89,6 +90,7 @@ mod min_max_cap {
 
     check_eq!(capacity: MIN_MAX_CAP.capacity() => MIN_MAX_CAP);
     check_eq!(new: MinMaxCapVal::new(CAP, CAP) => MIN_MAX_CAP);
+    check_eq!(zero: MinMaxCapVal::ZERO => MinMaxCapVal::new(0, 0));
     check_eq!(min_val: MIN_MAX_CAP.min() => MinCapVal(CAP));
     check_eq!(max_val: MIN_MAX_CAP.max() => MaxCapVal(CAP));
     check_eq!(min_cap: MIN_MAX_CAP.min_cap() => MIN_CAP);
@@ -135,6 +137,7 @@ mod exact_cap {
     use super::*;
 
     check_eq!(capacity: EXACT_CAP.capacity() => EXACT_CAP);
+    check_eq!(zero: ExactCapVal::ZERO => ExactCapVal(0));
     check_eq!(from_static: ExactCapVal::from(StaticExactCap::<CAP>) => EXACT_CAP);
     check_eq!(min_cap: EXACT_CAP.min_cap() => MIN_CAP);
     check_eq!(max_cap: EXACT_CAP.max_cap() => MAX_CAP);
