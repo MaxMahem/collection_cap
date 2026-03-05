@@ -2,6 +2,6 @@
 mod common;
 
 mod range;
-mod r#static;
+mod stat;
 mod unbounded;
-mod variable;
+mod val;

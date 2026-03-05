@@ -24,26 +24,6 @@ pub struct MaxUnderflow<CAP = MinCapVal> {
     min_cap: CAP,
 }
 
-impl MaxUnderflow<MinCapVal> {
-    /// Creates a new [`MaxUnderflow`] based on `max_size` and `min_cap`.
-    ///
-    /// # Arguments
-    ///
-    /// - `max_size`: The maximum number of elements produced.
-    /// - `min_cap`: The minimum capacity required.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `max_size` is >= `min_cap`.
-    #[must_use]
-    pub const fn new(max_size: usize, min_cap: MinCapVal) -> Self {
-        match max_size < min_cap.0 {
-            true => Self { max_size, min_cap },
-            false => panic!("max_size must be < min_cap"),
-        }
-    }
-}
-
 impl<CAP> MaxUnderflow<CAP> {
     /// Internal unchecked constructor.
     #[must_use]
@@ -63,11 +43,31 @@ impl<CAP> MaxUnderflow<CAP> {
     }
 }
 
+impl MaxUnderflow<MinCapVal> {
+    /// Creates a new [`MaxUnderflow`] based on `max_size` and `min_cap`.
+    ///
+    /// # Arguments
+    ///
+    /// - `max_size`: The maximum number of elements produced.
+    /// - `min_cap`: The minimum capacity required.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max_size` is >= `min_cap`.
+    #[must_use]
+    pub const fn new(max_size: usize, min_cap: MinCapVal) -> Self {
+        match max_size < min_cap.0 {
+            true => Self::from_parts(max_size, min_cap),
+            false => panic!("max_size must be < min_cap"),
+        }
+    }
+}
+
 impl<CAP: StaticCap<Cap = CAP> + Capacity> MaxUnderflow<CAP> {
     /// Internal unchecked constructor.
     #[must_use]
     pub(crate) const fn new_unchecked(max_size: usize) -> Self {
-        Self { max_size, min_cap: CAP::CAP }
+        Self::from_parts(max_size, CAP::CAP)
     }
 
     /// Creates a new [`MaxUnderflow`] for a static capacity.
@@ -104,26 +104,6 @@ pub struct MinOverflow<CAP> {
     max_cap: CAP,
 }
 
-impl MinOverflow<MaxCapVal> {
-    /// Creates a new [`MinOverflow`] based on `min_size` and `max_cap`.
-    ///
-    /// # Arguments
-    ///
-    /// - `min_size`: The minimum number of elements the [`Iterator`] will produce.
-    /// - `max_cap`: The maximum capacity constraint.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `min_size` <= `max_cap`.
-    #[must_use]
-    pub const fn new(min_size: usize, max_cap: MaxCapVal) -> Self {
-        match min_size > max_cap.0 {
-            true => Self { min_size, max_cap },
-            false => panic!("min_size must be > max_cap"),
-        }
-    }
-}
-
 impl<CAP> MinOverflow<CAP> {
     /// Internal unchecked constructor.
     #[must_use]
@@ -143,11 +123,31 @@ impl<CAP> MinOverflow<CAP> {
     }
 }
 
+impl MinOverflow<MaxCapVal> {
+    /// Creates a new [`MinOverflow`] based on `min_size` and `max_cap`.
+    ///
+    /// # Arguments
+    ///
+    /// - `min_size`: The minimum number of elements the [`Iterator`] will produce.
+    /// - `max_cap`: The maximum capacity constraint.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `min_size` <= `max_cap`.
+    #[must_use]
+    pub const fn new(min_size: usize, max_cap: MaxCapVal) -> Self {
+        match min_size > max_cap.0 {
+            true => Self::from_parts(min_size, max_cap),
+            false => panic!("min_size must be > max_cap"),
+        }
+    }
+}
+
 impl<CAP: StaticCap<Cap = CAP> + Capacity> MinOverflow<CAP> {
     /// Internal unchecked constructor.
     #[must_use]
     pub(crate) const fn new_unchecked(min_size: usize) -> Self {
-        Self { min_size, max_cap: CAP::CAP }
+        Self::from_parts(min_size, CAP::CAP)
     }
 
     /// Creates a new [`MinOverflow`] for a static capacity.

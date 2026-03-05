@@ -10,4 +10,9 @@ macro_rules! assert_then {
     }};
 }
 
+macro_rules! Ok {
+    () => {{ Ok(()) }};
+}
+
+pub(crate) use Ok;
 pub(crate) use assert_then;

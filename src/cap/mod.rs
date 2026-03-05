@@ -1,8 +1,8 @@
 mod range;
-mod r#static;
+mod stat;
 mod unbounded;
-mod variable;
+mod val;
 
-pub use r#static::*;
+pub use stat::*;
 pub use unbounded::*;
-pub use variable::*;
+pub use val::*;
