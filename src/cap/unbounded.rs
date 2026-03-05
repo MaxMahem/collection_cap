@@ -2,7 +2,7 @@ use core::convert::Infallible;
 use core::ops::{Bound, RangeBounds};
 use derive_more::{Display, From, Into};
 
-use crate::internal::Sealed;
+use crate::internal::{Ok, Sealed};
 use crate::{Capacity, StaticCap, VariableCap};
 
 /// A runtime constraint specifying an unbounded capacity.
@@ -14,7 +14,7 @@ pub struct UnboundedCap;
 impl Sealed for UnboundedCap {}
 
 impl Capacity for UnboundedCap {
-    type Error = Infallible;
+    type CapError = Infallible;
     type FitError = Infallible;
     type Min = Self;
     type Max = Self;
@@ -29,11 +29,11 @@ impl Capacity for UnboundedCap {
 
     /// Always returns `Ok(())` as an unbounded capacity constraint is
     /// compatible with any iterator.
-    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
-        Ok(())
+        Ok!()
     }
 
     /// Always returns `Ok(())` as an unbounded capacity constraint fits
@@ -42,7 +42,7 @@ impl Capacity for UnboundedCap {
     where
         I: Iterator + ?Sized,
     {
-        Ok(())
+        Ok!()
     }
 }
 

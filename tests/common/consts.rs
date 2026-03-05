@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::ops::{Range, RangeFrom};
+use std::ops::{Range, RangeFrom, RangeInclusive};
 
 use collection_cap::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
 use collection_cap::err::{
@@ -26,7 +26,7 @@ pub const MAX_UNDERFLOWS: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::n
 pub const CAP_ERROR_OVERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Overflow(MIN_OVERFLOWS);
 pub const CAP_ERROR_UNDERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Underflow(MAX_UNDERFLOWS);
 
-pub const CAP_RANGE: Range<usize> = CAP..CAP + 1;
+pub const CAP_RANGE: RangeInclusive<usize> = CAP..=CAP;
 
 pub const INVALID_ITER: InvalidIterator<i32> = InvalidIterator::DEFAULT;
 
