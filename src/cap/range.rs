@@ -1,8 +1,10 @@
 use core::ops::{Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive};
 
 use crate::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCap};
-use crate::internal::{EMPTY_RANGE_MSG, INVALID_RANGE_MSG};
 use crate::{StaticCap, VariableCap};
+
+const EMPTY_RANGE_MSG: &str = "Range must not be empty";
+const INVALID_RANGE_MSG: &str = "Invalid range (start > end)";
 
 impl VariableCap for RangeTo<usize> {
     type Cap = MaxCapVal;
@@ -13,11 +15,7 @@ impl VariableCap for RangeTo<usize> {
     ///
     /// Panics if `self.end == 0` (range is empty).
     fn capacity(&self) -> MaxCapVal {
-        #[expect(clippy::option_if_let_else)]
-        match usize::checked_sub(self.end, 1) {
-            None => panic!("{EMPTY_RANGE_MSG}"),
-            Some(end) => MaxCapVal(end),
-        }
+        usize::checked_sub(self.end, 1).map_or_else(|| panic!("{EMPTY_RANGE_MSG}"), MaxCapVal)
     }
 }
 
@@ -51,7 +49,7 @@ impl VariableCap for Range<usize> {
         match (self.start, self.end) {
             (start, end) if start == end => panic!("{EMPTY_RANGE_MSG}"),
             (start, end) if start > end => panic!("{INVALID_RANGE_MSG}"),
-            (start, end) => MinMaxCapVal::new(start, end.saturating_sub(1)),
+            (start, end) => MinMaxCapVal::new(start, end - 1),
         }
     }
 }

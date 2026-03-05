@@ -16,7 +16,7 @@ pub trait SpareCapacityExt {
     ///
     /// v.extend(0..4);
     ///
-    /// let expected = v.capacity() - 0..4.len();
+    /// let expected = v.capacity() - (0..4).len();
     /// assert_eq!(expected, 10 - 4);
     /// assert_eq!(v.spare_capacity(), MaxCapVal(expected));
     /// ```
