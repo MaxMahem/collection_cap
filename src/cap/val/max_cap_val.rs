@@ -49,7 +49,7 @@ impl Capacity for MaxCapVal {
     {
         match iter.valid_size_hint() {
             (_, Some(max)) if !self.contains(&max) // fmt
-                => MaxOverflow::from_parts(max, *self).into_err(),
+                => MaxOverflow::from_parts_fixed(max, *self).into_err(),
             (_, None) => MaxOverflow::unbounded(*self).into_err(),
             _ => Ok!(),
         }

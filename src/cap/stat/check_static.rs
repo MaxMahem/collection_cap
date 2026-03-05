@@ -49,8 +49,8 @@ where
 
     let overflow = match max {
         Some(max) if !CAP::CAP.max_cap().contains(&max) // fmt
-            => MaxOverflow::from_parts(max, CAP::CAP.max_cap()).into_some(),
-        None => Some(MaxOverflow::from_parts_unbounded(CAP::CAP.max_cap())),
+            => MaxOverflow::from_parts_fixed(max, CAP::CAP.max_cap()).into_some(),
+        None => MaxOverflow::unbounded(CAP::CAP.max_cap()).into_some(),
         _ => None,
     };
 

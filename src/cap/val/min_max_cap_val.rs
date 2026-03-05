@@ -122,7 +122,7 @@ impl Capacity for MinMaxCapVal {
 
         let overflow = match max_opt {
             Some(max) if !self.max.contains(&max) // fmt
-                => MaxOverflow::from_parts(max, self.max).into_some(),
+                => MaxOverflow::from_parts_fixed(max, self.max).into_some(),
             None => MaxOverflow::unbounded(self.max).into_some(),
             _ => None,
         };
