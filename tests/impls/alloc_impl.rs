@@ -14,13 +14,13 @@ use crate::common::consts::*;
 macro_rules! test_spare_capacity_decreases {
     ($type:ty => $push:ident) => {
         #[test]
-        fn spare_capacity_decreases() {
+        fn spare_capacity_decreases_on_push() {
             let mut c = <$type>::with_capacity(CAP);
+            let original_cap = c.spare_capacity().0;
 
-            let cap = c.spare_capacity().0;
             c.$push(Default::default());
 
-            assert_eq!(c.spare_capacity(), MaxCapVal(cap - 1));
+            assert_eq!(c.spare_capacity(), MaxCapVal(original_cap - 1));
         }
     };
 }
@@ -28,7 +28,7 @@ macro_rules! test_spare_capacity_decreases {
 macro_rules! test_spare_capacity_full {
     ($type:ty => $push:ident) => {
         #[test]
-        fn spare_capacity_full() {
+        fn spare_capacity_when_full_is_zero() {
             let c = (0..CAP).map_to_default().fold_mut(<$type>::with_capacity(CAP), <$type>::$push);
 
             assert_eq!(c.spare_capacity(), ZERO_MAX_CAP_VAL);
