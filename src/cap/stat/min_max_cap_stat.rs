@@ -22,7 +22,8 @@ pub struct StaticMinMaxCap<const MIN: usize, const MAX: usize>;
 
 impl<const MIN: usize, const MAX: usize> StaticMinMaxCap<MIN, MAX> {
     /// The equivalent range.
-    pub const RANGE: RangeInclusive<usize> = MIN..=MAX;
+    pub const RANGE: RangeInclusive<usize> =
+        assert_then!(MIN <= MAX => MIN..=MAX, "StaticMinMaxCap: MIN must be <= MAX");
 }
 
 impl<const MIN: usize, const MAX: usize> StaticCap for StaticMinMaxCap<MIN, MAX> {
