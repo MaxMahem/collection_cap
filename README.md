@@ -102,7 +102,7 @@ Put another way, `ensure_compatible` has the possibility of a false positive, wh
 ```rust
 use collection_cap::IterCapExt;
 
-let max_5_elements = ..5;
+let max_5_elements = ..=4;
 
 let produces_10 = (0..10).filter(|_| true);
 assert_eq!(produces_10.size_hint(), (0, Some(10)), "Can produce 0 to 10 elements");

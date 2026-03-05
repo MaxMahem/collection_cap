@@ -31,7 +31,7 @@ pub trait IterCapExt {
     /// (0..100).filter(|_| false).ensure_compatible::<[i32; 10]>()
     ///     .expect("Should be a false positive");
     /// ```
-    fn ensure_compatible<C>(&self) -> Result<(), <C::Cap as Capacity>::Error>
+    fn ensure_compatible<C>(&self) -> Result<(), <C::Cap as Capacity>::CapError>
     where
         Self: Iterator,
         C: StaticCap,
@@ -74,7 +74,7 @@ pub trait IterCapExt {
     /// (0..100).filter(|_| false).ensure_compatible_with(&array_vec)
     ///     .expect("Should be a false positive");
     /// ```
-    fn ensure_compatible_with<CAP>(&self, cap: CAP) -> Result<(), <CAP::Cap as Capacity>::Error>
+    fn ensure_compatible_with<CAP>(&self, cap: CAP) -> Result<(), <CAP::Cap as Capacity>::CapError>
     where
         Self: Iterator,
         CAP: VariableCap,

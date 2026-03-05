@@ -1,4 +1,4 @@
-use core::ops::RangeBounds;
+use core::{error::Error, ops::RangeBounds};
 
 use crate::internal::Sealed;
 
@@ -89,19 +89,20 @@ use crate::internal::Sealed;
 /// An [`ExactSizeIterator`] that passes [`Capacity::check_compatibility`] is
 /// guaranteed to fit within the capacity constraints. Likewise, one that fails
 /// [`Capacity::check_fit`] is guaranteed to be incompatible.
-pub trait Capacity: Sealed {
+pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debug {
     /// The error type returned if an iterator is not compatible with the
     /// capacity constraints.
-    type Error;
+    type CapError: Error;
 
     /// The error type returned if an iterator is not guaranteed to fit within
     /// the capacity constraints.
-    type FitError;
+    type FitError: Error;
+
     /// The type representing the minimum capacity bound.
-    type Min: Capacity + RangeBounds<usize>;
+    type Min: Capacity;
 
     /// The type representing the maximum capacity bound.
-    type Max: Capacity + RangeBounds<usize>;
+    type Max: Capacity;
 
     /// Returns the minimum capacity constraint.
     fn min_cap(&self) -> Self::Min;
@@ -140,7 +141,7 @@ pub trait Capacity: Sealed {
     /// StaticMinCap::<10>.check_compatibility(&produce_0)
     ///     .expect("Should be a false positive");
     /// ```
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::Error>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized;
 

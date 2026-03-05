@@ -22,10 +22,10 @@ mod underflows {
     mod static_cap {
         use super::*;
 
-        check_eq!(new: MinUnderflow::<MinMaxCap>::new(UNDER_CAP) => MinUnderflow::<MinMaxCap>::new(UNDER_CAP));
-        panics!(panic_new: MinUnderflow::<MinMaxCap>::new(CAP) => "min_size must be < C::MIN_CAP");
-        check_eq!(min_size: MinUnderflow::<MinMaxCap>::new(UNDER_CAP).min_size() => UNDER_CAP);
-        check_eq!(min_cap: *MinUnderflow::<MinMaxCap>::new(UNDER_CAP).min_cap() => MinMaxCap::CAP);
+        check_eq!(new: MinUnderflow::<MinCap>::new(UNDER_CAP) => MinUnderflow::<MinCap>::new(UNDER_CAP));
+        panics!(panic_new: MinUnderflow::<MinCap>::new(CAP) => "min_size must be < MIN");
+        check_eq!(min_size: MinUnderflow::<MinCap>::new(UNDER_CAP).min_size() => UNDER_CAP);
+        check_eq!(min_cap: *MinUnderflow::<MinCap>::new(UNDER_CAP).min_cap() => MinCap::CAP);
     }
 }
 
@@ -45,11 +45,11 @@ mod overflows {
     mod static_cap {
         use super::*;
 
-        check_eq!(fixed: MaxOverflow::<MinMaxCap>::fixed(OVER_CAP) => MaxOverflow::<MinMaxCap>::fixed(OVER_CAP));
-        panics!(panic_fixed: MaxOverflow::<MinMaxCap>::fixed(CAP) => "max_size must be > C::MAX_CAP");
-        check_eq!(unbounded: MaxOverflow::<MinMaxCap>::UNBOUNDED.max_size() => UpperBound::Unbounded);
-        check_eq!(fixed_max_size: MaxOverflow::<MinMaxCap>::fixed(OVER_CAP).max_size() => FIXED_UPPER_BOUND);
-        check_eq!(max_cap: *MaxOverflow::<MinMaxCap>::fixed(OVER_CAP).max_cap() => MinMaxCap::CAP);
+        check_eq!(fixed: MaxOverflow::<MaxCap>::fixed(OVER_CAP) => MaxOverflow::<MaxCap>::fixed(OVER_CAP));
+        panics!(panic_fixed: MaxOverflow::<MaxCap>::fixed(CAP) => "max_size must be > MAX");
+        check_eq!(unbounded: MaxOverflow::<MaxCap>::UNBOUNDED.max_size() => UpperBound::Unbounded);
+        check_eq!(fixed_max_size: MaxOverflow::<MaxCap>::fixed(OVER_CAP).max_size() => FIXED_UPPER_BOUND);
+        check_eq!(max_cap: *MaxOverflow::<MaxCap>::fixed(OVER_CAP).max_cap() => MaxCap::CAP);
     }
 }
 
