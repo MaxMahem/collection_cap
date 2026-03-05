@@ -33,7 +33,8 @@ impl Capacity for MinCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max_size)) if !self.contains(&max_size) => MaxUnderflow::from_parts(max_size, *self).into_err(),
+            (_, Some(max_size)) if !self.contains(&max_size) // fmt
+                => MaxUnderflow::from_parts(max_size, *self).into_err(),
             _ => Ok(()),
         }
     }
@@ -43,7 +44,8 @@ impl Capacity for MinCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) => MinUnderflow::from_parts(min, *self).into_err(),
+            (min, _) if !self.contains(&min) // fmt
+                => MinUnderflow::from_parts(min, *self).into_err(),
             _ => Ok(()),
         }
     }
@@ -91,7 +93,8 @@ impl Capacity for MaxCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min_size, _) if !self.contains(&min_size) => MinOverflow::from_parts(min_size, *self).into_err(),
+            (min_size, _) if !self.contains(&min_size) // fmt
+                => MinOverflow::from_parts(min_size, *self).into_err(),
             _ => Ok(()),
         }
     }
@@ -101,7 +104,8 @@ impl Capacity for MaxCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) => MaxOverflow::from_parts(max, *self).into_err(),
+            (_, Some(max)) if !self.contains(&max) // fmt
+                => MaxOverflow::from_parts(max, *self).into_err(),
             (_, None) => MaxOverflow::unbounded(*self).into_err(),
             _ => Ok(()),
         }
@@ -208,10 +212,12 @@ impl Capacity for MinMaxCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.max.contains(&min) => MinOverflow::from_parts(min, self.max) //
+            (min, _) if !self.max.contains(&min) // fmt
+                => MinOverflow::from_parts(min, self.max) //
                 .pipe(CompatError::Overflow)
                 .into_err(),
-            (_, Some(max)) if !self.min.contains(&max) => MaxUnderflow::from_parts(max, self.min) //
+            (_, Some(max)) if !self.min.contains(&max) // fmt
+                => MaxUnderflow::from_parts(max, self.min) //
                 .pipe(CompatError::Underflow)
                 .into_err(),
             _ => Ok(()),
@@ -224,9 +230,15 @@ impl Capacity for MinMaxCapVal {
     {
         let (min, max_opt) = iter.valid_size_hint();
 
-        let underflow = self.min.contains(&min).not().then(|| MinUnderflow::from_parts(min, self.min));
+        let underflow = self
+            .min
+            .contains(&min) // fmt
+            .not()
+            .then(|| MinUnderflow::from_parts(min, self.min));
+
         let overflow = match max_opt {
-            Some(max) if !self.max.contains(&max) => MaxOverflow::from_parts(max, self.max).into_some(),
+            Some(max) if !self.max.contains(&max) // fmt
+                => MaxOverflow::from_parts(max, self.max).into_some(),
             None => MaxOverflow::unbounded(self.max).into_some(),
             _ => None,
         };

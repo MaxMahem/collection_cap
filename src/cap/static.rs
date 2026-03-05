@@ -6,7 +6,7 @@ use tap::Pipe;
 
 use crate::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCap};
 use crate::err::{CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow};
-use crate::internal::Sealed;
+use crate::internal::{Sealed, assert_then};
 use crate::{Capacity, IterExt, StaticCap};
 
 /// A static minimum capacity constraint.
@@ -55,7 +55,8 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) => MaxUnderflow::new_unchecked(max).into_err(),
+            (_, Some(max)) if !self.contains(&max) // fmt
+                => MaxUnderflow::new_unchecked(max).into_err(),
             _ => Ok(()),
         }
     }
@@ -65,7 +66,8 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) => MinUnderflow::new_unchecked(min).into_err(),
+            (min, _) if !self.contains(&min) // fmt
+                => MinUnderflow::new_unchecked(min).into_err(),
             _ => Ok(()),
         }
     }
@@ -123,7 +125,8 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min_size, _) if !self.contains(&min_size) => MinOverflow::new_unchecked(min_size).into_err(),
+            (min_size, _) if !self.contains(&min_size) // fmt
+                => MinOverflow::new_unchecked(min_size).into_err(),
             _ => Ok(()),
         }
     }
@@ -133,7 +136,8 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) => MaxOverflow::<Self>::fixed_unchecked(max).into_err(),
+            (_, Some(max)) if !self.contains(&max) // fmt
+                => MaxOverflow::<Self>::fixed_unchecked(max).into_err(),
             (_, None) => Err(MaxOverflow::<Self>::UNBOUNDED),
             _ => Ok(()),
         }
@@ -155,16 +159,14 @@ where
     I: Iterator + ?Sized,
 {
     match iter.valid_size_hint() {
-        (min_size, _) if !CAP::CAP.max_cap().contains(&min_size) => {
-            MinOverflow::<CAP::Max>::new_unchecked(min_size) //
+        (min_size, _) if !CAP::CAP.max_cap().contains(&min_size) // fmt
+            => MinOverflow::<CAP::Max>::new_unchecked(min_size) //
                 .pipe(CompatError::Overflow)
-                .into_err()
-        }
-        (_, Some(max_size)) if !CAP::CAP.min_cap().contains(&max_size) => {
-            MaxUnderflow::<CAP::Min>::new_unchecked(max_size) //
+                .into_err(),
+        (_, Some(max_size)) if !CAP::CAP.min_cap().contains(&max_size) // fmt
+            => MaxUnderflow::<CAP::Min>::new_unchecked(max_size) //
                 .pipe(CompatError::Underflow)
-                .into_err()
-        }
+                .into_err(),
         _ => Ok(()),
     }
 }
@@ -179,9 +181,15 @@ where
 {
     let (min, max) = iter.valid_size_hint();
 
-    let underflow = CAP::CAP.min_cap().contains(&min).not().then(|| MinUnderflow::<CAP::Min>::new_unchecked(min));
+    let underflow = CAP::CAP // fmt
+        .min_cap()
+        .contains(&min)
+        .not()
+        .then(|| MinUnderflow::<CAP::Min>::new_unchecked(min));
+
     let overflow = match max {
-        Some(max) if !CAP::CAP.max_cap().contains(&max) => MaxOverflow::<CAP::Max>::fixed_unchecked(max).into_some(),
+        Some(max) if !CAP::CAP.max_cap().contains(&max) // fmt
+            => MaxOverflow::<CAP::Max>::fixed_unchecked(max).into_some(),
         None => Some(MaxOverflow::<CAP::Max>::UNBOUNDED),
         _ => None,
     };
@@ -211,10 +219,7 @@ pub struct StaticMinMaxCap<const MIN: usize, const MAX: usize>;
 impl<const MIN: usize, const MAX: usize> StaticCap for StaticMinMaxCap<MIN, MAX> {
     type Cap = Self;
 
-    const CAP: Self::Cap = {
-        assert!(MIN <= MAX, "StaticMinMaxCap: MIN must be <= MAX");
-        Self
-    };
+    const CAP: Self::Cap = assert_then!(MIN <= MAX => Self, "StaticMinMaxCap: MIN must be <= MAX");
 }
 
 impl<const MIN: usize, const MAX: usize> Sealed for StaticMinMaxCap<MIN, MAX> {}
