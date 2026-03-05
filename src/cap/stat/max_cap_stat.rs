@@ -1,6 +1,6 @@
 use core::ops::{Bound, RangeBounds, RangeToInclusive};
-use derive_more::Debug;
 
+use derive_more::Debug;
 use fluent_result::into::IntoResult;
 
 use crate::cap::{MaxCapVal, UnboundedCap};
@@ -20,24 +20,6 @@ pub struct StaticMaxCap<const MAX: usize>;
 impl<const MAX: usize> StaticMaxCap<MAX> {
     /// The equivalent range.
     pub const RANGE: RangeToInclusive<usize> = ..=MAX;
-}
-
-impl<const MAX: usize> StaticCap for StaticMaxCap<MAX> {
-    type Cap = Self;
-
-    const CAP: Self::Cap = Self;
-}
-
-impl<const MAX: usize> Sealed for StaticMaxCap<MAX> {}
-
-impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
-    fn start_bound(&self) -> Bound<&usize> {
-        Bound::Unbounded
-    }
-
-    fn end_bound(&self) -> Bound<&usize> {
-        Bound::Included(&MAX)
-    }
 }
 
 impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
@@ -78,6 +60,22 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
     }
 }
 
+impl<const MAX: usize> StaticCap for StaticMaxCap<MAX> {
+    type Cap = Self;
+
+    const CAP: Self::Cap = Self;
+}
+
+impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
+    fn start_bound(&self) -> Bound<&usize> {
+        Bound::Unbounded
+    }
+
+    fn end_bound(&self) -> Bound<&usize> {
+        Bound::Included(&MAX)
+    }
+}
+
 impl<const MAX: usize> From<StaticMaxCap<MAX>> for MaxCapVal {
     fn from(_value: StaticMaxCap<MAX>) -> Self {
         Self(MAX)
@@ -89,3 +87,5 @@ impl<const MAX: usize> From<StaticMaxCap<MAX>> for RangeToInclusive<usize> {
         ..=MAX
     }
 }
+
+impl<const MAX: usize> Sealed for StaticMaxCap<MAX> {}

@@ -1,10 +1,10 @@
 use core::ops::{Bound, RangeBounds};
 
+use derive_more::{From, Into};
+
+use crate::Capacity;
 use crate::cap::val::{MaxCapVal, MinCapVal, MinMaxCapVal};
 use crate::err::{CompatError, FitError};
-use crate::internal::Sealed;
-use crate::{Capacity, VariableCap};
-use derive_more::{From, Into};
 
 /// A runtime constraint specifying an exact capacity.
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, From, Into)]
@@ -14,8 +14,6 @@ impl ExactCapVal {
     /// A capacity constraint representing exactly zero elements.
     pub const ZERO: Self = Self(0);
 }
-
-impl Sealed for ExactCapVal {}
 
 impl Capacity for ExactCapVal {
     type CapError = CompatError<MinCapVal, MaxCapVal>;
@@ -46,13 +44,7 @@ impl Capacity for ExactCapVal {
     }
 }
 
-impl VariableCap for ExactCapVal {
-    type Cap = Self;
-
-    fn capacity(&self) -> Self {
-        *self
-    }
-}
+crate::cap::val::impl_variable_cap!(ExactCapVal);
 
 impl RangeBounds<usize> for ExactCapVal {
     fn start_bound(&self) -> Bound<&usize> {
@@ -68,3 +60,5 @@ impl PartialEq<MinMaxCapVal> for ExactCapVal {
         self.0 == other.min().0 && self.0 == other.max().0
     }
 }
+
+crate::internal::impl_sealed!(ExactCapVal);

@@ -1,6 +1,6 @@
 use core::ops::{Bound, RangeBounds, RangeFrom};
-use derive_more::Debug;
 
+use derive_more::Debug;
 use fluent_result::into::IntoResult;
 
 use crate::cap::{MinCapVal, UnboundedCap};
@@ -20,24 +20,6 @@ pub struct StaticMinCap<const MIN: usize>;
 impl<const MIN: usize> StaticMinCap<MIN> {
     /// The equivalent range.
     pub const RANGE: RangeFrom<usize> = MIN..;
-}
-
-impl<const MIN: usize> StaticCap for StaticMinCap<MIN> {
-    type Cap = Self;
-
-    const CAP: Self::Cap = Self;
-}
-
-impl<const MIN: usize> Sealed for StaticMinCap<MIN> {}
-
-impl<const MIN: usize> RangeBounds<usize> for StaticMinCap<MIN> {
-    fn start_bound(&self) -> Bound<&usize> {
-        Bound::Included(&MIN)
-    }
-
-    fn end_bound(&self) -> Bound<&usize> {
-        Bound::Unbounded
-    }
 }
 
 impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
@@ -77,6 +59,22 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
     }
 }
 
+impl<const MIN: usize> StaticCap for StaticMinCap<MIN> {
+    type Cap = Self;
+
+    const CAP: Self::Cap = Self;
+}
+
+impl<const MIN: usize> RangeBounds<usize> for StaticMinCap<MIN> {
+    fn start_bound(&self) -> Bound<&usize> {
+        Bound::Included(&MIN)
+    }
+
+    fn end_bound(&self) -> Bound<&usize> {
+        Bound::Unbounded
+    }
+}
+
 impl<const MIN: usize> From<StaticMinCap<MIN>> for MinCapVal {
     fn from(_value: StaticMinCap<MIN>) -> Self {
         Self(MIN)
@@ -88,3 +86,5 @@ impl<const MIN: usize> From<StaticMinCap<MIN>> for RangeFrom<usize> {
         MIN..
     }
 }
+
+impl<const MIN: usize> Sealed for StaticMinCap<MIN> {}

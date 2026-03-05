@@ -1,17 +1,16 @@
 use core::ops::{Bound, RangeBounds, RangeFrom};
 
-use crate::cap::UnboundedCap;
-use crate::err::{MaxUnderflow, MinUnderflow};
-use crate::internal::{Ok, Sealed};
-use crate::{Capacity, IterExt, VariableCap};
 use derive_more::{From, Into};
 use fluent_result::into::IntoResult;
+
+use crate::cap::UnboundedCap;
+use crate::err::{MaxUnderflow, MinUnderflow};
+use crate::internal::Ok;
+use crate::{Capacity, IterExt};
 
 /// A runtime constraint specifying a minimum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into)]
 pub struct MinCapVal(pub usize);
-
-impl Sealed for MinCapVal {}
 
 impl Capacity for MinCapVal {
     type CapError = MaxUnderflow<Self>;
@@ -50,13 +49,7 @@ impl Capacity for MinCapVal {
     }
 }
 
-impl VariableCap for MinCapVal {
-    type Cap = Self;
-
-    fn capacity(&self) -> Self {
-        *self
-    }
-}
+crate::cap::val::impl_variable_cap!(MinCapVal);
 
 impl From<RangeFrom<usize>> for MinCapVal {
     fn from(value: RangeFrom<usize>) -> Self {
@@ -72,3 +65,5 @@ impl RangeBounds<usize> for MinCapVal {
         Bound::Unbounded
     }
 }
+
+crate::internal::impl_sealed!(MinCapVal);

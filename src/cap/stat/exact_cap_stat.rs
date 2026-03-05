@@ -1,4 +1,5 @@
 use core::ops::{Bound, RangeBounds, RangeInclusive};
+
 use derive_more::Debug;
 
 use crate::cap::{ExactCapVal, MinMaxCapVal, StaticMaxCap, StaticMinCap};
@@ -20,24 +21,6 @@ pub struct StaticExactCap<const SIZE: usize>;
 impl<const SIZE: usize> StaticExactCap<SIZE> {
     /// The equivalent range.
     pub const RANGE: RangeInclusive<usize> = SIZE..=SIZE;
-}
-
-impl<const SIZE: usize> StaticCap for StaticExactCap<SIZE> {
-    type Cap = Self;
-
-    const CAP: Self::Cap = Self;
-}
-
-impl<const SIZE: usize> Sealed for StaticExactCap<SIZE> {}
-
-impl<const SIZE: usize> RangeBounds<usize> for StaticExactCap<SIZE> {
-    fn start_bound(&self) -> Bound<&usize> {
-        Bound::Included(&SIZE)
-    }
-
-    fn end_bound(&self) -> Bound<&usize> {
-        Bound::Included(&SIZE)
-    }
 }
 
 impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
@@ -69,6 +52,22 @@ impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
     }
 }
 
+impl<const SIZE: usize> StaticCap for StaticExactCap<SIZE> {
+    type Cap = Self;
+
+    const CAP: Self::Cap = Self;
+}
+
+impl<const SIZE: usize> RangeBounds<usize> for StaticExactCap<SIZE> {
+    fn start_bound(&self) -> Bound<&usize> {
+        Bound::Included(&SIZE)
+    }
+
+    fn end_bound(&self) -> Bound<&usize> {
+        Bound::Included(&SIZE)
+    }
+}
+
 impl<const SIZE: usize> From<StaticExactCap<SIZE>> for ExactCapVal {
     fn from(_value: StaticExactCap<SIZE>) -> Self {
         Self(SIZE)
@@ -86,3 +85,5 @@ impl<const SIZE: usize> From<StaticExactCap<SIZE>> for RangeInclusive<usize> {
         SIZE..=SIZE
     }
 }
+
+impl<const SIZE: usize> Sealed for StaticExactCap<SIZE> {}

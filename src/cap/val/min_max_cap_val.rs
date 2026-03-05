@@ -1,17 +1,18 @@
 use core::ops::{Bound, Not, Range, RangeBounds, RangeInclusive};
 
-use crate::cap::val::{ExactCapVal, MaxCapVal, MinCapVal};
-use crate::err::{
-    CompatError, EmptyRange, FitError, FitErrorSpan, InvalidRange, MaxOverflow, MaxUnderflow, MinOverflow,
-    MinUnderflow, RangeError,
-};
-use crate::internal::{Ok, Sealed};
-use crate::{Capacity, IterExt, VariableCap};
+use derive_more::{From, Into};
 use fluent_result::into::{IntoOption, IntoResult};
 use tap::Pipe;
 
+use crate::cap::val::{ExactCapVal, MaxCapVal, MinCapVal};
+use crate::err::{CompatError, MaxUnderflow, MinOverflow};
+use crate::err::{EmptyRange, InvalidRange, RangeError};
+use crate::err::{FitError, FitErrorSpan, MaxOverflow, MinUnderflow};
+use crate::internal::Ok;
+use crate::{Capacity, IterExt};
+
 /// A runtime constraint specifying both a minimum and maximum capacity.
-#[derive(Debug, PartialEq, Eq, Copy, Clone, derive_more::Into)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Into, From)]
 pub struct MinMaxCapVal {
     /// The minimum capacity required.
     min: MinCapVal,
@@ -21,7 +22,7 @@ pub struct MinMaxCapVal {
 
 impl MinMaxCapVal {
     /// A capacity constraint requiring exactly zero elements.
-    pub const ZERO: Self = Self::new_unchecked(0, 0);
+    pub const ZERO: Self = Self::new(0, 0);
 
     /// Internal unchecked constructor.
     #[must_use]
@@ -59,23 +60,6 @@ impl MinMaxCapVal {
         self.max
     }
 }
-
-impl RangeBounds<usize> for MinMaxCapVal {
-    fn start_bound(&self) -> Bound<&usize> {
-        self.min.start_bound()
-    }
-    fn end_bound(&self) -> Bound<&usize> {
-        self.max.end_bound()
-    }
-}
-
-impl PartialEq<ExactCapVal> for MinMaxCapVal {
-    fn eq(&self, other: &ExactCapVal) -> bool {
-        self.min().0 == other.0 && self.max().0 == other.0
-    }
-}
-
-impl Sealed for MinMaxCapVal {}
 
 impl Capacity for MinMaxCapVal {
     type CapError = CompatError<MinCapVal, MaxCapVal>;
@@ -138,11 +122,26 @@ impl Capacity for MinMaxCapVal {
     }
 }
 
-impl VariableCap for MinMaxCapVal {
-    type Cap = Self;
+crate::cap::val::impl_variable_cap!(MinMaxCapVal);
 
-    fn capacity(&self) -> Self {
-        *self
+impl RangeBounds<usize> for MinMaxCapVal {
+    fn start_bound(&self) -> Bound<&usize> {
+        self.min.start_bound()
+    }
+    fn end_bound(&self) -> Bound<&usize> {
+        self.max.end_bound()
+    }
+}
+
+impl PartialEq<ExactCapVal> for MinMaxCapVal {
+    fn eq(&self, other: &ExactCapVal) -> bool {
+        self.min().0 == other.0 && self.max().0 == other.0
+    }
+}
+
+impl From<ExactCapVal> for MinMaxCapVal {
+    fn from(value: ExactCapVal) -> Self {
+        Self::new_unchecked(value.0, value.0)
     }
 }
 
@@ -165,8 +164,4 @@ impl TryFrom<RangeInclusive<usize>> for MinMaxCapVal {
     }
 }
 
-impl From<ExactCapVal> for MinMaxCapVal {
-    fn from(value: ExactCapVal) -> Self {
-        Self::new_unchecked(value.0, value.0)
-    }
-}
+crate::internal::impl_sealed!(MinMaxCapVal);

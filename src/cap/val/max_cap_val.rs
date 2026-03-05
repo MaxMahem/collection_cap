@@ -1,11 +1,12 @@
 use core::ops::{Bound, RangeBounds, RangeTo, RangeToInclusive};
 
-use crate::cap::UnboundedCap;
-use crate::err::{EmptyRange, MaxOverflow, MinOverflow};
-use crate::internal::{Ok, Sealed};
-use crate::{Capacity, IterExt, VariableCap};
 use derive_more::{From, Into};
 use fluent_result::into::IntoResult;
+
+use crate::cap::UnboundedCap;
+use crate::err::{EmptyRange, MaxOverflow, MinOverflow};
+use crate::internal::Ok;
+use crate::{Capacity, IterExt};
 
 /// A runtime constraint specifying a maximum capacity.
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into)]
@@ -15,8 +16,6 @@ impl MaxCapVal {
     /// A capacity constraint representing a maximum of zero elements.
     pub const ZERO: Self = Self(0);
 }
-
-impl Sealed for MaxCapVal {}
 
 impl Capacity for MaxCapVal {
     type CapError = MinOverflow<Self>;
@@ -56,13 +55,7 @@ impl Capacity for MaxCapVal {
     }
 }
 
-impl VariableCap for MaxCapVal {
-    type Cap = Self;
-
-    fn capacity(&self) -> Self {
-        *self
-    }
-}
+crate::cap::val::impl_variable_cap!(MaxCapVal);
 
 impl TryFrom<RangeTo<usize>> for MaxCapVal {
     type Error = EmptyRange;
@@ -85,3 +78,5 @@ impl RangeBounds<usize> for MaxCapVal {
         Bound::Included(&self.0)
     }
 }
+
+crate::internal::impl_sealed!(MaxCapVal);
