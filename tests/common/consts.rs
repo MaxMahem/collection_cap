@@ -2,7 +2,9 @@
 
 use std::ops::{Range, RangeFrom, RangeInclusive};
 
-use collection_cap::cap::{MaxCapVal, MinCapVal, MinMaxCapVal, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
+use collection_cap::cap::{
+    ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, StaticMaxCap, StaticMinCap, StaticMinMaxCap,
+};
 use collection_cap::err::{
     CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow, UpperBound,
 };
@@ -20,6 +22,7 @@ pub const UNDER_ITER: Range<i32> = 0..(UNDER_CAP as i32);
 pub const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
 pub const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
 pub const MIN_MAX_CAP_VAL: MinMaxCapVal = MinMaxCapVal::new(CAP, CAP);
+pub const EXACT_CAP_VAL: ExactCapVal = ExactCapVal(CAP);
 
 pub const MIN_OVERFLOWS: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
 pub const MAX_UNDERFLOWS: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
