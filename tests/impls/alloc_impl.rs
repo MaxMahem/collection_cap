@@ -29,9 +29,7 @@ macro_rules! test_spare_capacity_full {
     ($type:ty => $push:ident) => {
         #[test]
         fn spare_capacity_full() {
-            let c = (0..CAP)
-                .map_to_default()
-                .fold_mut(<$type>::with_capacity(CAP), <$type>::$push);
+            let c = (0..CAP).map_to_default().fold_mut(<$type>::with_capacity(CAP), <$type>::$push);
 
             assert_eq!(c.spare_capacity(), ZERO_MAX_CAP_VAL);
         }
