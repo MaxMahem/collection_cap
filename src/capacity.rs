@@ -35,15 +35,18 @@ use crate::internal::Sealed;
 /// # use collection_cap::cap::StaticMinCap;
 /// let produce_10 = (0..10).filter(|_| true);
 /// assert!(produce_10.size_hint() == (0, Some(10)));
-/// StaticMinCap::<10>.check_compatibility(&produce_10).expect("Should be compatible");
+/// StaticMinCap::<10>.check_compatibility(&produce_10)
+///     .expect("Should be compatible");
 ///
 /// let produce_9 = (0..9).filter(|_| true);
 /// assert!(produce_9.size_hint() == (0, Some(9)));
-/// StaticMinCap::<10>.check_compatibility(&produce_9).expect_err("Should not be compatible");
+/// StaticMinCap::<10>.check_compatibility(&produce_9)
+///     .expect_err("Should not be compatible");
 ///
 /// let produce_0 = (0..100).filter(|_| false);
 /// assert!(produce_0.size_hint() == (0, Some(100)));
-/// StaticMinCap::<10>.check_compatibility(&produce_0).expect("Should be a false positive");
+/// StaticMinCap::<10>.check_compatibility(&produce_0)
+///     .expect("Should be a false positive");
 /// ```
 ///
 /// # Note on Fit
@@ -67,15 +70,18 @@ use crate::internal::Sealed;
 /// # use collection_cap::cap::StaticMaxCap;
 /// let produce_0 = (0..10).filter(|_| false);
 /// assert!(produce_0.size_hint() == (0, Some(10)));
-/// StaticMaxCap::<10>.check_fit(&produce_0).expect("Should fit");
+/// StaticMaxCap::<10>.check_fit(&produce_0)
+///     .expect("Should fit");
 ///
 /// let produce_0 = (0..11).filter(|_| false);
 /// assert!(produce_0.size_hint() == (0, Some(11)));
-/// StaticMaxCap::<10>.check_fit(&produce_0).expect_err("Should not fit");
+/// StaticMaxCap::<10>.check_fit(&produce_0)
+///     .expect_err("Should not fit");
 ///
 /// let produce_20 = (0..20).filter(|_| true);
 /// assert!(produce_20.size_hint() == (0, Some(20)));
-/// StaticMaxCap::<10>.check_fit(&produce_20).expect_err("Should be a false negative");
+/// StaticMaxCap::<10>.check_fit(&produce_20)
+///     .expect_err("Should be a false negative");
 /// ```
 ///
 /// # Note on `ExactSizeIterator`

@@ -1,5 +1,4 @@
 use arrayvec::ArrayVec;
-use tap::Pipe;
 
 use crate::cap::{MaxCapVal, StaticMaxCap};
 use crate::{StaticCap, VariableCap};
@@ -8,7 +7,7 @@ impl<T, const N: usize> VariableCap for ArrayVec<T, N> {
     type Cap = MaxCapVal;
 
     fn capacity(&self) -> MaxCapVal {
-        self.remaining_capacity().pipe(MaxCapVal)
+        self.remaining_capacity().into()
     }
 }
 

@@ -78,7 +78,7 @@ The following [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_
 | Exact | [`ExactCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.ExactCapVal.html) | [`StaticExactCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.StaticExactCap.html) | `size..=size` |
 | Unbounded | [`UnboundedCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.UnboundedCap.html) | [`UnboundedCap`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.UnboundedCap.html) | `..` |
 
-These types can be used either directly, or as a type parameter for [`StaticCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html) or [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html). [`Capacity`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) is also implemented for all std range types, as indicated.
+These types can be used either directly, or as a return type parameter for [`StaticCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.StaticCap.html) or [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.VariableCap.html). [`VariableCap`](https://MaxMahem.github.io/collection_cap/collection_cap/trait.Capacity.html) is also implemented for std range types, as indicated.
 
 ```rust
 use collection_cap::IterCapExt;
@@ -124,3 +124,4 @@ It's on crates.io: [collection_cap](https://crates.io/crates/collection_cap)
 ### Features
 
 - `arrayvec`: Implements `StaticCap` and `VariableCap` for `ArrayVec`.
+- `alloc`: Adds the `SpareCapacityExt` extension trait for `Vec`, `String`, and `VecDeque` to allow querying their remaining capacity as a [`MaxCapVal`](https://MaxMahem.github.io/collection_cap/collection_cap/cap/struct.MaxCapVal.html).
