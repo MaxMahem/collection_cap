@@ -36,12 +36,16 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         UnboundedCap
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        size >= MIN
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) // fmt
+            (_, Some(max)) if !self.contains_size(max) // fmt
                 => MaxUnderflow::from_parts(max, Self).into_err(),
             _ => Ok!(),
         }
@@ -52,7 +56,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) // fmt
+            (min, _) if !self.contains_size(min) // fmt
                 => MinUnderflow::from_parts(min, Self).into_err(),
             _ => Ok!(),
         }

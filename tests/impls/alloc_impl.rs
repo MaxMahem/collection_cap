@@ -15,7 +15,7 @@ macro_rules! test_spare_capacity_decreases {
     ($type:ty => $push:ident) => {
         #[test]
         fn spare_capacity_decreases_on_push() {
-            let mut c = <$type>::with_capacity(CAP);
+            let mut c = <$type>::with_capacity(base::CAP);
             let original_cap = c.spare_capacity().0;
 
             c.$push(Default::default());
@@ -29,7 +29,7 @@ macro_rules! test_spare_capacity_full {
     ($type:ty => $push:ident) => {
         #[test]
         fn spare_capacity_when_full_is_zero() {
-            let c = (0..CAP).map_to_default().fold_mut(<$type>::with_capacity(CAP), <$type>::$push);
+            let c = (0..base::CAP).map_to_default().fold_mut(<$type>::with_capacity(base::CAP), <$type>::$push);
 
             assert_eq!(c.spare_capacity(), MaxCapVal::ZERO);
         }
@@ -39,8 +39,8 @@ macro_rules! test_spare_capacity_full {
 mod vec {
     use super::*;
 
-    check_eq!(spare_capacity_empty: Vec::<i32>::with_capacity(CAP).spare_capacity() 
-        => MaxCapVal(Vec::<i32>::with_capacity(CAP).capacity()));
+    check_eq!(spare_capacity_empty: Vec::<i32>::with_capacity(base::CAP).spare_capacity() 
+        => MaxCapVal(Vec::<i32>::with_capacity(base::CAP).capacity()));
 
     test_spare_capacity_decreases!(Vec<i32> => push);
 
@@ -50,8 +50,8 @@ mod vec {
 mod string {
     use super::*;
 
-    check_eq!(spare_capacity_empty: String::with_capacity(CAP).spare_capacity() 
-        => MaxCapVal(String::with_capacity(CAP).capacity()));
+    check_eq!(spare_capacity_empty: String::with_capacity(base::CAP).spare_capacity() 
+        => MaxCapVal(String::with_capacity(base::CAP).capacity()));
 
     test_spare_capacity_decreases!(String => push);
 
@@ -61,8 +61,8 @@ mod string {
 mod vec_deque {
     use super::*;
 
-    check_eq!(spare_capacity_empty: VecDeque::<i32>::with_capacity(CAP).spare_capacity() 
-        => MaxCapVal(VecDeque::<i32>::with_capacity(CAP).capacity()));
+    check_eq!(spare_capacity_empty: VecDeque::<i32>::with_capacity(base::CAP).spare_capacity() 
+        => MaxCapVal(VecDeque::<i32>::with_capacity(base::CAP).capacity()));
 
     test_spare_capacity_decreases!(VecDeque<i32> => push_back);
 

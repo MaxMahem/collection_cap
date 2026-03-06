@@ -3,7 +3,7 @@ use core::ops::{Bound, RangeBounds};
 use derive_more::{Display, From, Into};
 
 use crate::internal::{Ok, Sealed};
-use crate::{Capacity, StaticCap, VariableCap};
+use crate::{Capacity, StaticCap};
 
 /// A runtime constraint specifying an unbounded capacity.
 ///
@@ -27,6 +27,12 @@ impl Capacity for UnboundedCap {
         *self
     }
 
+    /// Always returns `true` as an unbounded capacity constraint is
+    /// compatible with any size.
+    fn contains_size(&self, _size: usize) -> bool {
+        true
+    }
+
     /// Always returns `Ok(())` as an unbounded capacity constraint is
     /// compatible with any iterator.
     fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::CapError>
@@ -46,13 +52,7 @@ impl Capacity for UnboundedCap {
     }
 }
 
-impl VariableCap for UnboundedCap {
-    type Cap = Self;
-
-    fn capacity(&self) -> Self {
-        *self
-    }
-}
+crate::cap::val::impl_variable_cap_from_self!(UnboundedCap);
 
 impl StaticCap for UnboundedCap {
     type Cap = Self;

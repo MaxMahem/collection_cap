@@ -31,12 +31,16 @@ impl Capacity for MaxCapVal {
         *self
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        size <= self.0
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min_size, _) if !self.contains(&min_size) // fmt
+            (min_size, _) if !self.contains_size(min_size) // fmt
                 => MinOverflow::from_parts(min_size, *self).into_err(),
             _ => Ok!(),
         }
@@ -47,7 +51,7 @@ impl Capacity for MaxCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max)) if !self.contains(&max) // fmt
+            (_, Some(max)) if !self.contains_size(max) // fmt
                 => MaxOverflow::from_parts_fixed(max, *self).into_err(),
             (_, None) => MaxOverflow::unbounded(*self).into_err(),
             _ => Ok!(),
@@ -55,7 +59,7 @@ impl Capacity for MaxCapVal {
     }
 }
 
-crate::cap::val::impl_variable_cap!(MaxCapVal);
+crate::cap::val::impl_variable_cap_from_self!(MaxCapVal);
 
 impl TryFrom<RangeTo<usize>> for MaxCapVal {
     type Error = EmptyRange;

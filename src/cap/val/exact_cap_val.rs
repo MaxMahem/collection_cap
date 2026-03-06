@@ -29,6 +29,10 @@ impl Capacity for ExactCapVal {
         MaxCapVal(self.0)
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        self.0 == size
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
@@ -44,7 +48,7 @@ impl Capacity for ExactCapVal {
     }
 }
 
-crate::cap::val::impl_variable_cap!(ExactCapVal);
+crate::cap::val::impl_variable_cap_from_self!(ExactCapVal);
 
 impl RangeBounds<usize> for ExactCapVal {
     fn start_bound(&self) -> Bound<&usize> {

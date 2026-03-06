@@ -2,7 +2,6 @@ use core::ops::{Bound, Not, Range, RangeBounds, RangeInclusive};
 
 use derive_more::{From, Into};
 use fluent_result::into::{IntoOption, IntoResult};
-use tap::Pipe;
 
 use crate::cap::val::{ExactCapVal, MaxCapVal, MinCapVal};
 use crate::err::{CompatError, MaxUnderflow, MinOverflow};
@@ -75,19 +74,19 @@ impl Capacity for MinMaxCapVal {
         self.max()
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        self.min.contains_size(size) && self.max.contains_size(size)
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.max.contains(&min) // fmt
-                => MinOverflow::from_parts(min, self.max) //
-                .pipe(CompatError::Overflow)
-                .into_err(),
-            (_, Some(max)) if !self.min.contains(&max) // fmt
-                => MaxUnderflow::from_parts(max, self.min) //
-                .pipe(CompatError::Underflow)
-                .into_err(),
+            (min, _) if !self.max.contains_size(min) // fmt
+                => MinOverflow::from_parts(min, self.max).into_err()?,
+            (_, Some(max)) if !self.min.contains_size(max) // fmt
+                => MaxUnderflow::from_parts(max, self.min).into_err()?,
             _ => Ok!(),
         }
     }
@@ -98,31 +97,29 @@ impl Capacity for MinMaxCapVal {
     {
         let (min, max_opt) = iter.valid_size_hint();
 
-        let underflow = self
+        let underflow = self // fmt
             .min
-            .contains(&min) // fmt
+            .contains_size(min)
             .not()
             .then(|| MinUnderflow::from_parts(min, self.min));
 
         let overflow = match max_opt {
-            Some(max) if !self.max.contains(&max) // fmt
+            Some(max) if !self.max.contains_size(max) // fmt
                 => MaxOverflow::from_parts_fixed(max, self.max).into_some(),
             None => MaxOverflow::unbounded(self.max).into_some(),
             _ => None,
         };
 
         match (underflow, overflow) {
-            (Some(underflow), Some(overflow)) => FitErrorSpan::from_parts(overflow, underflow) //
-                .pipe(FitError::Both)
-                .into_err(),
-            (Some(underflow), None) => FitError::Underflow(underflow).into_err(),
-            (None, Some(overflow)) => FitError::Overflow(overflow).into_err(),
+            (Some(underflow), Some(overflow)) => FitErrorSpan::from_parts(overflow, underflow).into_err()?,
+            (Some(underflow), None) => Err(underflow)?,
+            (None, Some(overflow)) => Err(overflow)?,
             (None, None) => Ok!(),
         }
     }
 }
 
-crate::cap::val::impl_variable_cap!(MinMaxCapVal);
+crate::cap::val::impl_variable_cap_from_self!(MinMaxCapVal);
 
 impl RangeBounds<usize> for MinMaxCapVal {
     fn start_bound(&self) -> Bound<&usize> {
@@ -149,9 +146,9 @@ impl TryFrom<Range<usize>> for MinMaxCapVal {
     type Error = RangeError;
     fn try_from(value: Range<usize>) -> Result<Self, Self::Error> {
         match (value.start, value.end) {
-            (start, end) if start == end => Err(EmptyRange.into()),
-            (start, end) if start > end => Err(InvalidRange.into()),
-            (start, end) => Ok(Self::new_unchecked(start, end - 1)),
+            (start, end) if start == end => Err(EmptyRange)?,
+            (start, end) if start > end => Err(InvalidRange)?,
+            (start, end) => Self::new_unchecked(start, end - 1).into_ok(),
         }
     }
 }
@@ -159,8 +156,10 @@ impl TryFrom<Range<usize>> for MinMaxCapVal {
 impl TryFrom<RangeInclusive<usize>> for MinMaxCapVal {
     type Error = InvalidRange;
     fn try_from(value: RangeInclusive<usize>) -> Result<Self, Self::Error> {
-        let (start, end) = (*value.start(), *value.end());
-        if start > end { Err(InvalidRange) } else { Ok(Self::new_unchecked(start, end)) }
+        match (*value.start(), *value.end()) {
+            (start, end) if start > end => Err(InvalidRange),
+            (start, end) => Self::new_unchecked(start, end).into_ok(),
+        }
     }
 }
 

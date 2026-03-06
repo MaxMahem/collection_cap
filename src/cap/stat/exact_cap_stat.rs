@@ -7,8 +7,6 @@ use crate::err::{CompatError, FitError};
 use crate::internal::Sealed;
 use crate::{Capacity, StaticCap};
 
-use super::{check_static_compatibility, check_static_fit};
-
 /// A marker for a static exact size constraint, where `MIN == MAX`.
 ///
 /// # Type Parameters
@@ -37,18 +35,22 @@ impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
         StaticMaxCap::<SIZE>
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        size == SIZE
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
-        check_static_compatibility::<Self, I>(iter)
+        super::check_static::check_static_compatibility(iter)
     }
 
     fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
     where
         I: Iterator + ?Sized,
     {
-        check_static_fit::<Self, I>(iter)
+        super::check_static::check_static_fit(iter)
     }
 }
 

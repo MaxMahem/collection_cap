@@ -12,8 +12,8 @@ check_eq!(max_cap: UnboundedCap.max_cap() => UnboundedCap);
 
 check_eq!(capacity: UnboundedCap.capacity() => UnboundedCap);
 
-check_eq!(compatible: UnboundedCap.check_compatibility(&COMPAT_ITER) => Ok(()));
-check_eq!(fit: UnboundedCap.check_fit(&COMPAT_ITER) => Ok(()));
+check_eq!(compatible: UnboundedCap.check_compatibility(&iter::COMPAT_ITER) => Ok(()));
+check_eq!(fit: UnboundedCap.check_fit(&iter::COMPAT_ITER) => Ok(()));
 
 mod range_bounds {
     use super::*;

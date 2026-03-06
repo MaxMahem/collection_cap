@@ -13,20 +13,20 @@ mod underflows {
     mod dynamic {
         use super::*;
 
-        check_eq!(new: MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL) => MAX_UNDERFLOWS);
-        panics!(panic_new: MaxUnderflow::<MinCapVal>::new(CAP, MIN_CAP_VAL) => "max_size must be < min_cap");
-        check_eq!(max_size: MAX_UNDERFLOWS.max_size() => UNDER_CAP);
-        check_eq!(min_cap: *MAX_UNDERFLOWS.min_cap() => MIN_CAP_VAL);
+        check_eq!(new: MaxUnderflow::<MinCapVal>::new(base::UNDER_CAP, val::MIN_CAP_VAL) => err_val_compat::MAX_UNDERFLOWS);
+        panics!(panic_new: MaxUnderflow::<MinCapVal>::new(base::CAP, val::MIN_CAP_VAL) => "max_size must be < min_cap");
+        check_eq!(max_size: err_val_compat::MAX_UNDERFLOWS.max_size() => base::UNDER_CAP);
+        check_eq!(min_cap: *err_val_compat::MAX_UNDERFLOWS.min_cap() => val::MIN_CAP_VAL);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(new: MaxUnderflow::<MinCap>::new(UNDER_CAP) 
-            => MaxUnderflow::<MinCap>::new(UNDER_CAP));
-        panics!(panic_new: MaxUnderflow::<MinCap>::new(CAP) => "max_size must be < MIN");
-        check_eq!(max_size: MaxUnderflow::<MinCap>::new(UNDER_CAP).max_size() => UNDER_CAP);
-        check_eq!(min_cap: *MaxUnderflow::<MinCap>::new(UNDER_CAP).min_cap() => MinCap::CAP);
+        check_eq!(new: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP) 
+            => MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP));
+        panics!(panic_new: MaxUnderflow::<stat::MinCap>::new(base::CAP) => "max_size must be < MIN");
+        check_eq!(max_size: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).max_size() => base::UNDER_CAP);
+        check_eq!(min_cap: *MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).min_cap() => stat::MinCap::CAP);
     }
 }
 
@@ -36,20 +36,20 @@ mod overflows {
     mod dynamic {
         use super::*;
 
-        check_eq!(new: MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL) => MIN_OVERFLOWS);
-        panics!(panic_new: MinOverflow::<MaxCapVal>::new(CAP, MAX_CAP_VAL) => "min_size must be > max_cap");
-        check_eq!(min_size: MIN_OVERFLOWS.min_size() => OVER_CAP);
-        check_eq!(max_cap: *MIN_OVERFLOWS.max_cap() => MAX_CAP_VAL);
+        check_eq!(new: MinOverflow::<MaxCapVal>::new(base::OVER_CAP, val::MAX_CAP_VAL) => err_val_compat::MIN_OVERFLOWS);
+        panics!(panic_new: MinOverflow::<MaxCapVal>::new(base::CAP, val::MAX_CAP_VAL) => "min_size must be > max_cap");
+        check_eq!(min_size: err_val_compat::MIN_OVERFLOWS.min_size() => base::OVER_CAP);
+        check_eq!(max_cap: *err_val_compat::MIN_OVERFLOWS.max_cap() => val::MAX_CAP_VAL);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(new: MinOverflow::<MaxCap>::new(OVER_CAP) 
-            => MinOverflow::<MaxCap>::new(OVER_CAP));
-        panics!(panic_new: MinOverflow::<MaxCap>::new(CAP) => "min_size must be > MAX");
-        check_eq!(min_size: MinOverflow::<MaxCap>::new(OVER_CAP).min_size() => OVER_CAP);
-        check_eq!(max_cap: *MinOverflow::<MaxCap>::new(OVER_CAP).max_cap() => MaxCap::CAP);
+        check_eq!(new: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP) 
+            => MinOverflow::<stat::MaxCap>::new(base::OVER_CAP));
+        panics!(panic_new: MinOverflow::<stat::MaxCap>::new(base::CAP) => "min_size must be > MAX");
+        check_eq!(min_size: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).min_size() => base::OVER_CAP);
+        check_eq!(max_cap: *MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).max_cap() => stat::MaxCap::CAP);
     }
 }
 
@@ -59,18 +59,18 @@ mod errors {
     mod dynamic {
         use super::*;
 
-        check_eq!(from_overflow: CompatError::from(MIN_OVERFLOWS) => CAP_ERROR_OVERFLOW);
-        check_eq!(from_underflow: CompatError::from(MAX_UNDERFLOWS) => CAP_ERROR_UNDERFLOW);
+        check_eq!(from_overflow: CompatError::from(err_val_compat::MIN_OVERFLOWS) => err_val_compat::OVERFLOW);
+        check_eq!(from_underflow: CompatError::from(err_val_compat::MAX_UNDERFLOWS) => err_val_compat::UNDERFLOW);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(from_overflow: MinOverflow::<MaxCap>::new(OVER_CAP)
-            .pipe(CompatError::<MinCap, MaxCap>::from)
-            => MinOverflow::<MaxCap>::new(OVER_CAP).pipe(CompatError::Overflow));
-        check_eq!(from_underflow: MaxUnderflow::<MinCap>::new(UNDER_CAP)
-            .pipe(CompatError::<MinCap, MaxCap>::from)
-            => MaxUnderflow::<MinCap>::new(UNDER_CAP).pipe(CompatError::Underflow));
+        check_eq!(from_overflow: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP)
+            .pipe(CompatError::<stat::MinCap, stat::MaxCap>::from)
+            => MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).pipe(CompatError::Overflow));
+        check_eq!(from_underflow: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP)
+            .pipe(CompatError::<stat::MinCap, stat::MaxCap>::from)
+            => MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).pipe(CompatError::Underflow));
     }
 }

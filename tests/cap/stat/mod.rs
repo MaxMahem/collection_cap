@@ -6,7 +6,6 @@ use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinM
 use collection_cap::err::{CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow};
 use core::ops::{RangeFrom, RangeInclusive, RangeToInclusive};
 
-use crate::common::consts::*;
 use crate::common::{check_eq, panics};
 
 mod exact_cap_stat;
