@@ -1,45 +1,40 @@
-#![allow(unused_imports)]
+pub use core::ops::Bound;
+
+use crate::common::check_eq;
 use crate::common::consts::*;
-use super::*;
+use crate::{caps, check_compat, check_fit, contains_size, range_bounds};
 
-check_eq!(capacity: MAX_CAP.capacity() => MAX_CAP);
-check_eq!(from_static: MaxCapVal::from(StaticMaxCap::<{ base::CAP }>) => MAX_CAP);
-check_eq!(min_cap: MAX_CAP.min_cap() => UnboundedCap);
-check_eq!(max_cap: MAX_CAP.max_cap() => MAX_CAP);
+use collection_cap::cap::{MaxCapVal, StaticMaxCap, UnboundedCap};
+use collection_cap::err::{EmptyRange, MaxOverflow, MinOverflow};
+
+const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
+
 check_eq!(zero: MaxCapVal::ZERO => MaxCapVal(0));
-
-check_eq!(from_range_to_inclusive: MaxCapVal::from(..=base::CAP) => MAX_CAP);
+check_eq!(from_static: MaxCapVal::from(StaticMaxCap::<CAP>) => MAX_CAP_VAL);
+check_eq!(from_range_to_inclusive: MaxCapVal::from(..=CAP) => MAX_CAP_VAL);
 
 mod try_from_range_to {
     use super::*;
 
-    check_eq!(valid: MaxCapVal::try_from(..base::CAP + 1) => Ok(MAX_CAP));
+    check_eq!(valid: MaxCapVal::try_from(..CAP + 1) => Ok(MAX_CAP_VAL));
     check_eq!(empty: MaxCapVal::try_from(..0) => Err(EmptyRange));
 }
 
-mod range_bounds {
-    use super::*;
+check_eq!(capacity: MAX_CAP_VAL.capacity() => MAX_CAP_VAL);
 
-    check_eq!(start_bound: MAX_CAP.start_bound() => Unbounded);
-    check_eq!(end_bound: MAX_CAP.end_bound() => Included(&base::CAP));
-}
+caps!(MAX_CAP_VAL => { min: UnboundedCap, max: MAX_CAP_VAL });
 
-mod check_compat {
-    use super::*;
+contains_size!(MAX_CAP_VAL => { cap: true, under: true, over: false });
 
-    check_eq!(compatible: MAX_CAP.check_compatibility(&iter::COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: MAX_CAP.check_compatibility(&iter::OVER_ITER) => Err(err_val_compat::MIN_OVERFLOWS));
+range_bounds!(MAX_CAP_VAL => { start: Bound::Unbounded, end: Bound::Included(&CAP) });
 
-    panics!(bad_iter: MAX_CAP.check_compatibility(&iter::INVALID_ITER) => "Invalid size hint");
-}
+const MIN_OVERFLOW: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
+check_compat!(MAX_CAP_VAL => { overflow: Err(MIN_OVERFLOW), underflow: Ok(()) });
 
-mod check_fit {
-    use super::*;
-
-    check_eq!(compatible: MAX_CAP.check_fit(&iter::COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: MAX_CAP.check_fit(&iter::OVER_ITER) => Err(err_val_fit::MAX_OVERFLOWS));
-    check_eq!(overflow_unbounded: MAX_CAP.check_fit(&iter::OVER_ITER_UNBOUNDED) 
-        => Err(MaxOverflow::unbounded(MAX_CAP)));
-
-    panics!(bad_iter: MAX_CAP.check_fit(&iter::INVALID_ITER) => "Invalid size hint");
-}
+const MAX_OVERFLOW: MaxOverflow<MaxCapVal> = MaxOverflow::<MaxCapVal>::fixed(OVER_CAP, MAX_CAP_VAL);
+check_fit!(MAX_CAP_VAL => {
+    underflow: Ok(()),
+    overflow: Err(MAX_OVERFLOW),
+    unbounded: Err(MaxOverflow::unbounded(MAX_CAP_VAL)),
+    both: Err(MAX_OVERFLOW)
+});

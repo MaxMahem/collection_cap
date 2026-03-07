@@ -3,6 +3,7 @@ mod common;
 
 mod array;
 mod arrayvec;
+mod range;
 mod slice;
 
 #[cfg(feature = "alloc")]

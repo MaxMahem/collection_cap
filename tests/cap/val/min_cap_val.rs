@@ -1,34 +1,32 @@
-#![allow(unused_imports)]
+pub use core::ops::Bound;
+
 use crate::common::consts::*;
-use super::*;
 
-check_eq!(capacity: MIN_CAP.capacity() => MIN_CAP);
-check_eq!(from_static: MinCapVal::from(StaticMinCap::<{ base::CAP }>) => MIN_CAP);
-check_eq!(min_cap: MIN_CAP.min_cap() => MIN_CAP);
-check_eq!(max_cap: MIN_CAP.max_cap() => UnboundedCap);
-check_eq!(from_range_from: MinCapVal::from(base::CAP..) => MIN_CAP);
+use collection_cap::cap::{MinCapVal, StaticMinCap, UnboundedCap};
+use collection_cap::err::{MaxUnderflow, MinUnderflow};
 
-mod range_bounds {
-    use super::*;
+use crate::common::check_eq;
+use crate::{caps, check_compat, check_fit, contains_size, range_bounds};
 
-    check_eq!(start_bound: MIN_CAP.start_bound() => Included(&base::CAP));
-    check_eq!(end_bound: MIN_CAP.end_bound() => Unbounded);
-}
+const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
 
-mod check_compat {
-    use super::*;
+check_eq!(capacity: MIN_CAP_VAL.capacity() => MIN_CAP_VAL);
+check_eq!(from_static: MinCapVal::from(StaticMinCap::<CAP>) => MIN_CAP_VAL);
+check_eq!(from_range_from: MinCapVal::from(CAP..) => MIN_CAP_VAL);
 
-    check_eq!(compatible: MIN_CAP.check_compatibility(&iter::COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: MIN_CAP.check_compatibility(&iter::UNDER_ITER) => Err(err_val_compat::MAX_UNDERFLOWS));
+caps!(MIN_CAP_VAL => { min: MIN_CAP_VAL, max: UnboundedCap });
 
-    panics!(bad_iter: MIN_CAP.check_compatibility(&iter::INVALID_ITER) => "Invalid size hint");
-}
+contains_size!(MIN_CAP_VAL => { cap: true, under: false, over: true });
 
-mod check_fit {
-    use super::*;
+range_bounds!(MIN_CAP_VAL => { start: Bound::Included(&CAP), end: Bound::Unbounded });
 
-    check_eq!(compatible: MIN_CAP.check_fit(&iter::COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: MIN_CAP.check_fit(&iter::UNDER_ITER) => Err(err_val_fit::MIN_UNDERFLOWS));
+const MAX_UNDERFLOW: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+check_compat!(MIN_CAP_VAL => { overflow: Ok(()), underflow: Err(MAX_UNDERFLOW) });
 
-    panics!(bad_iter: MIN_CAP.check_fit(&iter::INVALID_ITER) => "Invalid size hint");
-}
+const MIN_UNDERFLOW: MinUnderflow<MinCapVal> = MinUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+check_fit!(MIN_CAP_VAL => {
+    underflow: Err(MIN_UNDERFLOW),
+    overflow: Ok(()),
+    unbounded: Ok(()),
+    both: Err(MIN_UNDERFLOW)
+});

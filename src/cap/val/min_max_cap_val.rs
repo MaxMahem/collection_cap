@@ -5,7 +5,7 @@ use fluent_result::into::{IntoOption, IntoResult};
 
 use crate::cap::val::{ExactCapVal, MaxCapVal, MinCapVal};
 use crate::err::{CompatError, MaxUnderflow, MinOverflow};
-use crate::err::{EmptyRange, InvalidRange, RangeError};
+use crate::err::{EmptyRange, FromRangeError, InvalidRange};
 use crate::err::{FitError, FitErrorSpan, MaxOverflow, MinUnderflow};
 use crate::internal::Ok;
 use crate::{Capacity, IterExt};
@@ -143,11 +143,11 @@ impl From<ExactCapVal> for MinMaxCapVal {
 }
 
 impl TryFrom<Range<usize>> for MinMaxCapVal {
-    type Error = RangeError;
+    type Error = FromRangeError;
     fn try_from(value: Range<usize>) -> Result<Self, Self::Error> {
         match (value.start, value.end) {
             (start, end) if start == end => Err(EmptyRange)?,
-            (start, end) if start > end => Err(InvalidRange)?,
+            (start, end) if start > end => InvalidRange::new(start, end).into_err()?,
             (start, end) => Self::new_unchecked(start, end - 1).into_ok(),
         }
     }
@@ -157,7 +157,7 @@ impl TryFrom<RangeInclusive<usize>> for MinMaxCapVal {
     type Error = InvalidRange;
     fn try_from(value: RangeInclusive<usize>) -> Result<Self, Self::Error> {
         match (*value.start(), *value.end()) {
-            (start, end) if start > end => Err(InvalidRange),
+            (start, end) if start > end => InvalidRange::new(start, end).into_err()?,
             (start, end) => Self::new_unchecked(start, end).into_ok(),
         }
     }

@@ -1,5 +1,3 @@
-use tap::Pipe;
-
 use collection_cap::StaticCap;
 use collection_cap::cap::{MaxCapVal, MinCapVal};
 use collection_cap::err::{CompatError, MaxUnderflow, MinOverflow};
@@ -7,26 +5,42 @@ use collection_cap::err::{CompatError, MaxUnderflow, MinOverflow};
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
 
+const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
+const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
+
+pub const MIN_OVERFLOW: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
+pub const MAX_UNDERFLOW: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+pub const COMPAT_ERR_OVERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Overflow(MIN_OVERFLOW);
+pub const COMPAT_ERR_UNDERFLOW: CompatError<MinCapVal, MaxCapVal> = CompatError::Underflow(MAX_UNDERFLOW);
+
+pub const STATIC_MIN_OVERFLOW: MinOverflow<StaticMaxCap<CAP>> = MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP);
+pub const STATIC_MAX_UNDERFLOW: MaxUnderflow<StaticMinCap<CAP>> = MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP);
+pub const STATIC_COMPAT_ERR_OVERFLOW: CompatError<StaticMinCap<CAP>, StaticMaxCap<CAP>> =
+    CompatError::Overflow(STATIC_MIN_OVERFLOW);
+pub const STATIC_COMPAT_ERR_UNDERFLOW: CompatError<StaticMinCap<CAP>, StaticMaxCap<CAP>> =
+    CompatError::Underflow(STATIC_MAX_UNDERFLOW);
+
 mod underflows {
     use super::*;
 
     mod dynamic {
         use super::*;
 
-        check_eq!(new: MaxUnderflow::<MinCapVal>::new(base::UNDER_CAP, val::MIN_CAP_VAL) => err_val_compat::MAX_UNDERFLOWS);
-        panics!(panic_new: MaxUnderflow::<MinCapVal>::new(base::CAP, val::MIN_CAP_VAL) => "max_size must be < min_cap");
-        check_eq!(max_size: err_val_compat::MAX_UNDERFLOWS.max_size() => base::UNDER_CAP);
-        check_eq!(min_cap: *err_val_compat::MAX_UNDERFLOWS.min_cap() => val::MIN_CAP_VAL);
+        check_eq!(new: MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL) 
+            => MAX_UNDERFLOW);
+        panics!(panic_new: MaxUnderflow::<MinCapVal>::new(CAP, MIN_CAP_VAL) 
+            => "max_size must be < min_cap");
+        check_eq!(max_size: MAX_UNDERFLOW.max_size() => UNDER_CAP);
+        check_eq!(min_cap: *MAX_UNDERFLOW.min_cap() => MIN_CAP_VAL);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(new: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP) 
-            => MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP));
-        panics!(panic_new: MaxUnderflow::<stat::MinCap>::new(base::CAP) => "max_size must be < MIN");
-        check_eq!(max_size: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).max_size() => base::UNDER_CAP);
-        check_eq!(min_cap: *MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).min_cap() => stat::MinCap::CAP);
+        check_eq!(new: MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP) => STATIC_MAX_UNDERFLOW);
+        panics!(panic_new: MaxUnderflow::<StaticMinCap<CAP>>::new(CAP) => "max_size must be < MIN");
+        check_eq!(max_size: STATIC_MAX_UNDERFLOW.max_size() => UNDER_CAP);
+        check_eq!(min_cap: *STATIC_MAX_UNDERFLOW.min_cap() => StaticMinCap::<CAP>::CAP);
     }
 }
 
@@ -36,20 +50,21 @@ mod overflows {
     mod dynamic {
         use super::*;
 
-        check_eq!(new: MinOverflow::<MaxCapVal>::new(base::OVER_CAP, val::MAX_CAP_VAL) => err_val_compat::MIN_OVERFLOWS);
-        panics!(panic_new: MinOverflow::<MaxCapVal>::new(base::CAP, val::MAX_CAP_VAL) => "min_size must be > max_cap");
-        check_eq!(min_size: err_val_compat::MIN_OVERFLOWS.min_size() => base::OVER_CAP);
-        check_eq!(max_cap: *err_val_compat::MIN_OVERFLOWS.max_cap() => val::MAX_CAP_VAL);
+        check_eq!(new: MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL) => MIN_OVERFLOW);
+        panics!(panic_new: MinOverflow::<MaxCapVal>::new(CAP, MAX_CAP_VAL) 
+            => "min_size must be > max_cap");
+        check_eq!(min_size: MIN_OVERFLOW.min_size() => OVER_CAP);
+        check_eq!(max_cap: *MIN_OVERFLOW.max_cap() => MAX_CAP_VAL);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(new: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP) 
-            => MinOverflow::<stat::MaxCap>::new(base::OVER_CAP));
-        panics!(panic_new: MinOverflow::<stat::MaxCap>::new(base::CAP) => "min_size must be > MAX");
-        check_eq!(min_size: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).min_size() => base::OVER_CAP);
-        check_eq!(max_cap: *MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).max_cap() => stat::MaxCap::CAP);
+        check_eq!(new: MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP) => STATIC_MIN_OVERFLOW);
+        panics!(panic_new: MinOverflow::<StaticMaxCap<CAP>>::new(CAP) 
+            => "min_size must be > MAX");
+        check_eq!(min_size: STATIC_MIN_OVERFLOW.min_size() => OVER_CAP);
+        check_eq!(max_cap: *STATIC_MIN_OVERFLOW.max_cap() => StaticMaxCap::<CAP>::CAP);
     }
 }
 
@@ -59,18 +74,14 @@ mod errors {
     mod dynamic {
         use super::*;
 
-        check_eq!(from_overflow: CompatError::from(err_val_compat::MIN_OVERFLOWS) => err_val_compat::OVERFLOW);
-        check_eq!(from_underflow: CompatError::from(err_val_compat::MAX_UNDERFLOWS) => err_val_compat::UNDERFLOW);
+        check_eq!(from_overflow: CompatError::from(MIN_OVERFLOW) => COMPAT_ERR_OVERFLOW);
+        check_eq!(from_underflow: CompatError::from(MAX_UNDERFLOW) => COMPAT_ERR_UNDERFLOW);
     }
 
     mod static_cap {
         use super::*;
 
-        check_eq!(from_overflow: MinOverflow::<stat::MaxCap>::new(base::OVER_CAP)
-            .pipe(CompatError::<stat::MinCap, stat::MaxCap>::from)
-            => MinOverflow::<stat::MaxCap>::new(base::OVER_CAP).pipe(CompatError::Overflow));
-        check_eq!(from_underflow: MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP)
-            .pipe(CompatError::<stat::MinCap, stat::MaxCap>::from)
-            => MaxUnderflow::<stat::MinCap>::new(base::UNDER_CAP).pipe(CompatError::Underflow));
+        check_eq!(from_overflow: CompatError::from(STATIC_MIN_OVERFLOW) => STATIC_COMPAT_ERR_OVERFLOW);
+        check_eq!(from_underflow: CompatError::from(STATIC_MAX_UNDERFLOW) => STATIC_COMPAT_ERR_UNDERFLOW);
     }
 }
