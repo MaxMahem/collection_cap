@@ -1,4 +1,3 @@
-mod range;
 mod stat;
 mod unbounded;
 mod val;

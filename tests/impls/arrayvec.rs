@@ -8,6 +8,8 @@ use arrayvec::ArrayVec;
 
 type TestArrayVec = ArrayVec<i32, CAP>;
 
+const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
+
 check_eq!(variable_capacity_empty: VariableCap::capacity(&TestArrayVec::new()) => MAX_CAP_VAL);
 check_eq!(static_capacity: TestArrayVec::CAP => StaticMaxCap::<CAP>);
 

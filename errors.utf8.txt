@@ -1,0 +1,36 @@
+﻿cargo :    Compiling collection_cap v0.1.0 (C:\Users\maxma\source\repos\Rust\collection_cap)
+At line:1 char:1
++ cargo test --test cap --test err --message-format=short > errors.txt  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Compiling co...collection_cap):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+tests\cap\val\max_cap_val.rs:2:5: warning: unused import: `crate::common::consts::*`
+tests\cap\val\min_cap_val.rs:2:5: warning: unused import: `crate::common::consts::*`
+tests\cap\val\min_max_cap_val.rs:2:5: warning: unused import: `crate::common::consts::*`
+tests\cap\val\max_cap_val.rs:30:5: error[E0277]: can't compare `Result<(), 
+collection_cap::err::MinOverflow<collection_cap::cap::MaxCapVal>>` with `Result<_, CompatError<MinCapVal, 
+MaxCapVal>>`: no implementation for `Result<(), collection_cap::err::MinOverflow<collection_cap::cap::MaxCapVal>> == 
+Result<_, CompatError<MinCapVal, MaxCapVal>>`
+tests\cap\val\max_cap_val.rs:39:5: error[E0277]: can't compare `Result<(), 
+collection_cap::err::MaxOverflow<collection_cap::cap::MaxCapVal>>` with `Result<_, FitError<MinCapVal, MaxCapVal>>`: 
+no implementation for `Result<(), collection_cap::err::MaxOverflow<collection_cap::cap::MaxCapVal>> == Result<_, 
+FitError<MinCapVal, MaxCapVal>>`
+tests\cap\val\max_cap_val.rs:40:5: error[E0277]: can't compare `Result<(), 
+collection_cap::err::MaxOverflow<collection_cap::cap::MaxCapVal>>` with `Result<_, collection_cap::err::FitError<_, 
+collection_cap::cap::MaxCapVal>>`: no implementation for `Result<(), 
+collection_cap::err::MaxOverflow<collection_cap::cap::MaxCapVal>> == Result<_, collection_cap::err::FitError<_, 
+collection_cap::cap::MaxCapVal>>`
+tests\cap\val\min_cap_val.rs:21:5: error[E0277]: can't compare `Result<(), collection_cap::err::MaxUnderflow>` with 
+`Result<_, CompatError<MinCapVal, MaxCapVal>>`: no implementation for `Result<(), collection_cap::err::MaxUnderflow> 
+== Result<_, CompatError<MinCapVal, MaxCapVal>>`
+tests\cap\val\min_cap_val.rs:30:5: error[E0277]: can't compare `Result<(), 
+collection_cap::err::MinUnderflow<collection_cap::cap::MinCapVal>>` with `Result<_, FitError<MinCapVal, MaxCapVal>>`: 
+no implementation for `Result<(), collection_cap::err::MinUnderflow<collection_cap::cap::MinCapVal>> == Result<_, 
+FitError<MinCapVal, MaxCapVal>>`
+tests\cap\val\min_max_cap_val.rs:32:5: error[E0277]: can't compare `Result<collection_cap::cap::MinMaxCapVal, 
+collection_cap::err::InvalidRange>` with `Result<_, collection_cap::err::FromRangeError>`: no implementation for 
+`Result<collection_cap::cap::MinMaxCapVal, collection_cap::err::InvalidRange> == Result<_, 
+collection_cap::err::FromRangeError>`
+warning: `collection_cap` (test "cap") generated 3 warnings
+error: could not compile `collection_cap` (test "cap") due to 6 previous errors; 3 warnings emitted

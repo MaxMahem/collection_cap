@@ -8,7 +8,7 @@ pub use max_cap_val::*;
 pub use min_cap_val::*;
 pub use min_max_cap_val::*;
 
-macro_rules! impl_variable_cap {
+macro_rules! impl_variable_cap_from_self {
     ($type:ty) => {
         impl crate::VariableCap for $type {
             type Cap = Self;
@@ -20,4 +20,4 @@ macro_rules! impl_variable_cap {
     };
 }
 
-pub(crate) use impl_variable_cap;
+pub(crate) use impl_variable_cap_from_self;

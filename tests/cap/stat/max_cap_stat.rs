@@ -1,41 +1,28 @@
-use super::*;
+use std::ops::{Bound, RangeToInclusive};
 
-use fluent_result::into::IntoResult;
-use tap::Pipe;
+use collection_cap::cap::{StaticMaxCap, UnboundedCap};
+use collection_cap::err::{MaxOverflow, MinOverflow};
 
-check_eq!(min_cap: StaticMaxCap::<CAP>.min_cap() => UnboundedCap);
-check_eq!(max_cap: StaticMaxCap::<CAP>.max_cap() => StaticMaxCap::<CAP>);
+use crate::common::check_eq;
+use crate::common::consts::*;
+use crate::{caps, check_compat, check_fit, contains_size, range_bounds};
 
-mod check_compat {
-    use super::*;
+caps!(StaticMaxCap::<CAP> => { min: UnboundedCap, max: StaticMaxCap::<CAP> });
 
-    check_eq!(compatible: StaticMaxCap::<CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: StaticMaxCap::<CAP>.check_compatibility(&OVER_ITER)
-            => OVER_CAP.pipe(MinOverflow::<StaticMaxCap<CAP>>::new).into_err());
+contains_size!(StaticMaxCap::<CAP> => { cap: true, under: true, over: false });
 
-    panics!(bad_iter: StaticMaxCap::<CAP>.check_compatibility(&INVALID_ITER)
-        => "Invalid size hint");
-}
+const MIN_OVERFLOW: MinOverflow<StaticMaxCap<CAP>> = MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP);
+check_compat!(StaticMaxCap::<CAP> => { overflow: Err(MIN_OVERFLOW), underflow: Ok(()) });
 
-mod check_fit {
-    use super::*;
+const MAX_OVERFLOW: MaxOverflow<StaticMaxCap<CAP>> = MaxOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP);
+check_fit!(StaticMaxCap::<CAP> => {
+    underflow: Ok(()),
+    overflow: Err(MAX_OVERFLOW),
+    unbounded: Err(MaxOverflow::UNBOUNDED),
+    both: Err(MAX_OVERFLOW)
+});
 
-    check_eq!(compatible: StaticMaxCap::<CAP>.check_fit(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: StaticMaxCap::<CAP>.check_fit(&OVER_ITER)
-            => OVER_CAP.pipe(MaxOverflow::<StaticMaxCap<CAP>>::fixed).into_err());
-    check_eq!(overflow_unbounded: StaticMaxCap::<CAP>.check_fit(&OVER_ITER_UNBOUNDED)
-            => Err(MaxOverflow::UNBOUNDED));
-
-    panics!(bad_iter: StaticMaxCap::<CAP>.check_fit(&INVALID_ITER)
-        => "Invalid size hint");
-}
-
-mod range_bounds {
-    use super::*;
-
-    check_eq!(start_bound: StaticMaxCap::<CAP>.start_bound() => Unbounded);
-    check_eq!(end_bound: StaticMaxCap::<CAP>.end_bound() => Included(&CAP));
-}
+range_bounds!(StaticMaxCap::<CAP> => { start: Bound::Unbounded, end: Bound::Included(&CAP) });
 
 check_eq!(range_const: StaticMaxCap::<CAP>::RANGE => ..=CAP);
 check_eq!(from_range_to: RangeToInclusive::<usize>::from(StaticMaxCap::<CAP>) 

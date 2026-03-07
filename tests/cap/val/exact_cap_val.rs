@@ -1,39 +1,44 @@
-use super::*;
+pub use core::ops::Bound;
 
-check_eq!(capacity: EXACT_CAP.capacity() => EXACT_CAP);
+use crate::common::check_eq;
+use crate::common::consts::*;
+use crate::{caps, check_compat, check_fit, contains_size, range_bounds};
+
+use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, StaticExactCap};
+use collection_cap::err::{CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow};
+
+pub const EXACT_CAP_VAL: ExactCapVal = ExactCapVal(CAP);
+const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
+const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
+const MIN_MAX_CAP_VAL: MinMaxCapVal = MinMaxCapVal::new(CAP, CAP);
+
+check_eq!(capacity: EXACT_CAP_VAL.capacity() => EXACT_CAP_VAL);
 check_eq!(zero: ExactCapVal::ZERO => ExactCapVal(0));
-check_eq!(from_static: ExactCapVal::from(StaticExactCap::<CAP>) => EXACT_CAP);
-check_eq!(min_cap: EXACT_CAP.min_cap() => MIN_CAP);
-check_eq!(max_cap: EXACT_CAP.max_cap() => MAX_CAP);
+check_eq!(from_static: ExactCapVal::from(StaticExactCap::<CAP>) => EXACT_CAP_VAL);
 
-check_eq!(eq: EXACT_CAP == MIN_MAX_CAP => true);
-check_eq!(ne: EXACT_CAP != MIN_MAX_CAP => false);
+check_eq!(eq: EXACT_CAP_VAL == MIN_MAX_CAP_VAL => true);
+check_eq!(ne: EXACT_CAP_VAL != MIN_MAX_CAP_VAL => false);
 
-mod range_bounds {
-    use super::*;
+caps!(EXACT_CAP_VAL => { min: MIN_CAP_VAL, max: MAX_CAP_VAL });
 
-    check_eq!(start_bound: EXACT_CAP.start_bound() => Included(&CAP));
-    check_eq!(end_bound: EXACT_CAP.end_bound() => Included(&CAP));
-}
+contains_size!(EXACT_CAP_VAL => { cap: true, under: false, over: false });
 
-mod check_compat {
-    use super::*;
+const MAX_UNDERFLOW: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+const MIN_OVERFLOW: MinOverflow<MaxCapVal> = MinOverflow::<MaxCapVal>::new(OVER_CAP, MAX_CAP_VAL);
+check_compat!(EXACT_CAP_VAL => {
+    overflow: Err(CompatError::Overflow(MIN_OVERFLOW)),
+    underflow: Err(CompatError::Underflow(MAX_UNDERFLOW))
+});
 
-    check_eq!(compatible: EXACT_CAP.check_compatibility(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: EXACT_CAP.check_compatibility(&OVER_ITER) => Err(CAP_ERROR_OVERFLOW));
-    check_eq!(underflow: EXACT_CAP.check_compatibility(&UNDER_ITER) => Err(CAP_ERROR_UNDERFLOW));
+const MIN_UNDERFLOW: MinUnderflow<MinCapVal> = MinUnderflow::<MinCapVal>::new(UNDER_CAP, MIN_CAP_VAL);
+const MAX_OVERFLOW: MaxOverflow<MaxCapVal> = MaxOverflow::<MaxCapVal>::fixed(OVER_CAP, MAX_CAP_VAL);
+const MAX_OVERFLOW_UNBOUNDED: MaxOverflow<MaxCapVal> = MaxOverflow::<MaxCapVal>::unbounded(MAX_CAP_VAL);
+const FIT_ERROR_SPAN: FitErrorSpan<MinCapVal, MaxCapVal> = FitErrorSpan::new(MAX_OVERFLOW, MIN_UNDERFLOW);
+check_fit!(EXACT_CAP_VAL => {
+    underflow: Err(FitError::Underflow(MIN_UNDERFLOW)),
+    overflow: Err(FitError::Overflow(MAX_OVERFLOW)),
+    unbounded: Err(FitError::Overflow(MAX_OVERFLOW_UNBOUNDED)),
+    both: Err(FitError::Both(FIT_ERROR_SPAN))
+});
 
-    panics!(bad_iter: EXACT_CAP.check_compatibility(&INVALID_ITER) => "Invalid size hint");
-}
-
-mod check_fit {
-    use super::*;
-
-    check_eq!(compatible: EXACT_CAP.check_fit(&COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: EXACT_CAP.check_fit(&UNDER_ITER) => Err(FIT_ERROR_UNDERFLOW));
-    check_eq!(overflow: EXACT_CAP.check_fit(&OVER_ITER) => Err(FIT_ERROR_OVERFLOW));
-    check_eq!(overflow_unbounded: EXACT_CAP.check_fit(&OVER_ITER_UNBOUNDED) => Err(FitError::Overflow(MaxOverflow::unbounded(MAX_CAP))));
-    check_eq!(both: EXACT_CAP.check_fit(&BOTH_ITER) => Err(FIT_ERROR_BOTH));
-
-    panics!(bad_iter: EXACT_CAP.check_fit(&INVALID_ITER) => "Invalid size hint");
-}
+range_bounds!(EXACT_CAP_VAL => { start: Bound::Included(&CAP), end: Bound::Included(&CAP) });

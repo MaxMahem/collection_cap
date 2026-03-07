@@ -1,7 +1,10 @@
 #[path = "../common/mod.rs"]
 mod common;
 
-mod range;
+pub(crate) mod macros;
+
+pub(crate) use macros::*;
+
 mod stat;
 mod unbounded;
 mod val;

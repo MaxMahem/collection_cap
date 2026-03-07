@@ -1,4 +1,5 @@
 mod array;
+mod range;
 mod slice;
 
 #[cfg(feature = "arrayvec")]

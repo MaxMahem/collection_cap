@@ -110,6 +110,9 @@ pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debu
     /// Returns the maximum capacity constraint.
     fn max_cap(&self) -> Self::Max;
 
+    /// Returns true if the given size is within the capacity constraints.
+    fn contains_size(&self, size: usize) -> bool;
+
     /// Checks if `iter` is compatible with this capacity constraint.
     ///
     /// See [the Note on Compatibility](Self#note-on-compatibility) for more

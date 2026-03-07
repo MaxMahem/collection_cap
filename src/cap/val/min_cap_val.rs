@@ -26,12 +26,16 @@ impl Capacity for MinCapVal {
         UnboundedCap
     }
 
+    fn contains_size(&self, size: usize) -> bool {
+        size >= self.0
+    }
+
     fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
     where
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (_, Some(max_size)) if !self.contains(&max_size) // fmt
+            (_, Some(max_size)) if !self.contains_size(max_size) // fmt
                 => MaxUnderflow::from_parts(max_size, *self).into_err(),
             _ => Ok!(),
         }
@@ -42,14 +46,14 @@ impl Capacity for MinCapVal {
         I: Iterator + ?Sized,
     {
         match iter.valid_size_hint() {
-            (min, _) if !self.contains(&min) // fmt
+            (min, _) if !self.contains_size(min) // fmt
                 => MinUnderflow::from_parts(min, *self).into_err(),
             _ => Ok!(),
         }
     }
 }
 
-crate::cap::val::impl_variable_cap!(MinCapVal);
+crate::cap::val::impl_variable_cap_from_self!(MinCapVal);
 
 impl From<RangeFrom<usize>> for MinCapVal {
     fn from(value: RangeFrom<usize>) -> Self {

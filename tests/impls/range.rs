@@ -1,7 +1,14 @@
 use collection_cap::VariableCap;
 
+use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal};
+
 use crate::common::consts::*;
 use crate::common::{check_eq, panics};
+
+const EXACT_CAP_VAL: ExactCapVal = ExactCapVal(CAP);
+const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
+const MIN_CAP_VAL: MinCapVal = MinCapVal(CAP);
+const MIN_MAX_CAP_VAL: MinMaxCapVal = MinMaxCapVal::new(CAP, CAP);
 
 mod range_to_inclusive {
     use super::*;
@@ -25,9 +32,9 @@ mod range_from {
 
 mod range_inclusive {
     use super::*;
+    use crate::common::consts::{CAP, CAP_RANGE};
     use std::ops::RangeInclusive;
 
-    const CAP_RANGE: RangeInclusive<usize> = CAP..=CAP;
     const INVALID_RANGE: RangeInclusive<usize> = RangeInclusive::new(CAP, CAP - 1);
 
     check_eq!(capacity: CAP_RANGE.capacity() => MIN_MAX_CAP_VAL);

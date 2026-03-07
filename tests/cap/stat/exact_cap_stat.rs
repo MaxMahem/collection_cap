@@ -1,67 +1,41 @@
-use super::*;
-use fluent_result::into::IntoResult;
-use tap::Pipe;
+use std::ops::{Bound, RangeInclusive};
 
-check_eq!(min_cap: StaticExactCap::<CAP>.min_cap() => StaticMinCap::<CAP>);
-check_eq!(max_cap: StaticExactCap::<CAP>.max_cap() => StaticMaxCap::<CAP>);
+use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap};
+use collection_cap::err::{CompatError, FitError, FitErrorSpan, MaxOverflow, MaxUnderflow, MinOverflow, MinUnderflow};
 
-mod check_compat {
-    use super::*;
+use crate::common::check_eq;
+use crate::common::consts::*;
+use crate::{caps, check_compat, check_fit, contains_size, range_bounds};
 
-    check_eq!(compatible: StaticExactCap::<CAP>.check_compatibility(&COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: StaticExactCap::<CAP>.check_compatibility(&UNDER_ITER)
-        => UNDER_CAP.pipe(MaxUnderflow::<StaticMinCap<CAP>>::new)
-            .pipe(CompatError::Underflow)
-            .into_err()
-    );
+caps!(StaticExactCap::<CAP> => { min: StaticMinCap::<CAP>, max: StaticMaxCap::<CAP> });
 
-    check_eq!(overflow: StaticExactCap::<CAP>.check_compatibility(&OVER_ITER)
-        => OVER_CAP.pipe(MinOverflow::<StaticMaxCap<CAP>>::new)
-            .pipe(CompatError::Overflow)
-            .into_err()
-    );
+contains_size!(StaticExactCap::<CAP> => { cap: true, under: false, over: false });
 
-    panics!(bad_iter: StaticExactCap::<CAP>.check_compatibility(&INVALID_ITER)
-        => "Invalid size hint");
-}
+const MIN_OVERFLOW: MinOverflow<StaticMaxCap<CAP>> = MinOverflow::<StaticMaxCap<CAP>>::new(OVER_CAP);
+const MAX_UNDERFLOW: MaxUnderflow<StaticMinCap<CAP>> = MaxUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP);
+const COMPAT_ERR_OVERFLOW: CompatError<StaticMinCap<CAP>, StaticMaxCap<CAP>> = CompatError::Overflow(MIN_OVERFLOW);
+const COMPAT_ERR_UNDERFLOW: CompatError<StaticMinCap<CAP>, StaticMaxCap<CAP>> = CompatError::Underflow(MAX_UNDERFLOW);
 
-mod check_fit {
-    use super::*;
+check_compat!(StaticExactCap::<CAP> => {
+    overflow: Err(COMPAT_ERR_OVERFLOW),
+    underflow: Err(COMPAT_ERR_UNDERFLOW)
+});
 
-    check_eq!(compatible: StaticExactCap::<CAP>.check_fit(&COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: StaticExactCap::<CAP>.check_fit(&UNDER_ITER)
-        => UNDER_CAP.pipe(MinUnderflow::<StaticMinCap<CAP>>::new)
-            .pipe(FitError::Underflow)
-            .into_err()
-    );
+const MIN_UNDERFLOW: MinUnderflow<StaticMinCap<CAP>> = MinUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP);
+const MAX_OVERFLOW: MaxOverflow<StaticMaxCap<CAP>> = MaxOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP);
+const MAX_OVERFLOW_UNBOUNDED: MaxOverflow<StaticMaxCap<CAP>> = MaxOverflow::<StaticMaxCap<CAP>>::UNBOUNDED;
+const FIT_ERROR_SPAN: FitErrorSpan<StaticMinCap<CAP>, StaticMaxCap<CAP>> =
+    FitErrorSpan::new(MAX_OVERFLOW, MIN_UNDERFLOW);
 
-    check_eq!(overflow: StaticExactCap::<CAP>.check_fit(&OVER_ITER)
-        => OVER_CAP.pipe(MaxOverflow::<StaticMaxCap<CAP>>::fixed)
-            .pipe(FitError::Overflow)
-            .into_err()
-    );
+check_fit!(StaticExactCap::<CAP> => {
+    underflow: Err(FitError::Underflow(MIN_UNDERFLOW)),
+    overflow: Err(FitError::Overflow(MAX_OVERFLOW)),
+    unbounded: Err(FitError::Overflow(MAX_OVERFLOW_UNBOUNDED)),
+    both: Err(FitError::Both(FIT_ERROR_SPAN))
+});
 
-    check_eq!(overflow_unbounded: StaticExactCap::<CAP>.check_fit(&OVER_ITER_UNBOUNDED)
-        => MaxOverflow::UNBOUNDED.pipe(FitError::Overflow).into_err());
+range_bounds!(StaticExactCap::<CAP> => { start: Bound::Included(&CAP), end: Bound::Included(&CAP) });
 
-    check_eq!(both: StaticExactCap::<CAP>.check_fit(&BOTH_ITER)
-        => FitErrorSpan::new(
-            MaxOverflow::<StaticMaxCap<CAP>>::fixed(OVER_CAP),
-            MinUnderflow::<StaticMinCap<CAP>>::new(UNDER_CAP),
-        ).pipe(FitError::Both).into_err()
-    );
-
-    panics!(bad_iter: StaticExactCap::<CAP>.check_fit(&INVALID_ITER)
-        => "Invalid size hint");
-}
-
-mod range_bounds {
-    use super::*;
-
-    check_eq!(start_bound: StaticExactCap::<CAP>.start_bound() => Included(&CAP));
-    check_eq!(end_bound: StaticExactCap::<CAP>.end_bound() => Included(&CAP));
-}
-
-check_eq!(range_const: StaticExactCap::<CAP>::RANGE => CAP..=CAP);
+check_eq!(range_const: StaticExactCap::<CAP>::RANGE => CAP_RANGE);
 check_eq!(from_range_inclusive: RangeInclusive::<usize>::from(StaticExactCap::<CAP>)
     => StaticExactCap::<CAP>::RANGE);

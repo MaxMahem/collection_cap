@@ -1,7 +1,7 @@
+use crate::common::consts::*;
 use collection_cap::err::UpperBound;
 
 use crate::common::check_eq;
-use crate::common::consts::CAP;
 
 check_eq!(from_some: UpperBound::from(Some(CAP)) => UpperBound::Fixed(CAP));
 check_eq!(from_none: UpperBound::from(None) => UpperBound::Unbounded);
