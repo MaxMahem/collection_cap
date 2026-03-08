@@ -61,7 +61,7 @@ impl MinMaxCapVal {
 }
 
 impl Capacity for MinMaxCapVal {
-    type CapError = CompatError<MinCapVal, MaxCapVal>;
+    type CompatError = CompatError<MinCapVal, MaxCapVal>;
     type FitError = FitError<MinCapVal, MaxCapVal>;
     type Min = MinCapVal;
     type Max = MaxCapVal;
@@ -78,7 +78,7 @@ impl Capacity for MinMaxCapVal {
         self.min.contains_size(size) && self.max.contains_size(size)
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

@@ -23,7 +23,7 @@ impl<const MAX: usize> StaticMaxCap<MAX> {
 }
 
 impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
-    type CapError = MinOverflow<Self>;
+    type CompatError = MinOverflow<Self>;
     type FitError = MaxOverflow<Self>;
     type Min = UnboundedCap;
     type Max = Self;
@@ -40,7 +40,7 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         size <= MAX
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

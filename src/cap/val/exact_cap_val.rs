@@ -16,7 +16,7 @@ impl ExactCapVal {
 }
 
 impl Capacity for ExactCapVal {
-    type CapError = CompatError<MinCapVal, MaxCapVal>;
+    type CompatError = CompatError<MinCapVal, MaxCapVal>;
     type FitError = FitError<MinCapVal, MaxCapVal>;
     type Min = MinCapVal;
     type Max = MaxCapVal;
@@ -33,7 +33,7 @@ impl Capacity for ExactCapVal {
         self.0 == size
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

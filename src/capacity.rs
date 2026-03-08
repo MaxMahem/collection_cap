@@ -92,7 +92,7 @@ use crate::internal::Sealed;
 pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debug {
     /// The error type returned if an iterator is not compatible with the
     /// capacity constraints.
-    type CapError: Error;
+    type CompatError: Error;
 
     /// The error type returned if an iterator is not guaranteed to fit within
     /// the capacity constraints.
@@ -144,7 +144,7 @@ pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debu
     /// StaticMinCap::<10>.check_compatibility(&produce_0)
     ///     .expect("Should be a false positive");
     /// ```
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized;
 
@@ -190,7 +190,7 @@ pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debu
 /// See [`Capacity#note-on-compatibility`] and [`Capacity#note-on-fit`] for details.
 pub trait StaticCap {
     /// The type of the capacity constraint value.
-    type Cap: Capacity;
+    type Cap: Capacity + StaticCap;
 
     /// The static capacity constraint.
     const CAP: Self::Cap;
@@ -199,7 +199,7 @@ pub trait StaticCap {
 /// A type with a mutable [`Capacity`] or one that is determined at runtime.
 pub trait VariableCap {
     /// The type of the capacity constraint value.
-    type Cap: Capacity;
+    type Cap: Capacity + VariableCap;
 
     /// Returns the current capacity constraint.
     fn capacity(&self) -> Self::Cap;

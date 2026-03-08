@@ -14,7 +14,7 @@ pub struct UnboundedCap;
 impl Sealed for UnboundedCap {}
 
 impl Capacity for UnboundedCap {
-    type CapError = Infallible;
+    type CompatError = Infallible;
     type FitError = Infallible;
     type Min = Self;
     type Max = Self;
@@ -35,7 +35,7 @@ impl Capacity for UnboundedCap {
 
     /// Always returns `Ok(())` as an unbounded capacity constraint is
     /// compatible with any iterator.
-    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

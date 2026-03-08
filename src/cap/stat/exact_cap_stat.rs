@@ -22,7 +22,7 @@ impl<const SIZE: usize> StaticExactCap<SIZE> {
 }
 
 impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
-    type CapError = CompatError<Self::Min, Self::Max>;
+    type CompatError = CompatError<Self::Min, Self::Max>;
     type FitError = FitError<Self::Min, Self::Max>;
     type Min = StaticMinCap<SIZE>;
     type Max = StaticMaxCap<SIZE>;
@@ -39,7 +39,7 @@ impl<const SIZE: usize> Capacity for StaticExactCap<SIZE> {
         size == SIZE
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

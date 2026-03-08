@@ -26,7 +26,7 @@ impl<const MIN: usize, const MAX: usize> StaticMinMaxCap<MIN, MAX> {
 }
 
 impl<const MIN: usize, const MAX: usize> Capacity for StaticMinMaxCap<MIN, MAX> {
-    type CapError = CompatError<Self::Min, Self::Max>;
+    type CompatError = CompatError<Self::Min, Self::Max>;
     type FitError = FitError<Self::Min, Self::Max>;
     type Min = StaticMinCap<MIN>;
     type Max = StaticMaxCap<MAX>;
@@ -43,7 +43,7 @@ impl<const MIN: usize, const MAX: usize> Capacity for StaticMinMaxCap<MIN, MAX> 
         size >= MIN && size <= MAX
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

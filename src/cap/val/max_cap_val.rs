@@ -18,7 +18,7 @@ impl MaxCapVal {
 }
 
 impl Capacity for MaxCapVal {
-    type CapError = MinOverflow<Self>;
+    type CompatError = MinOverflow<Self>;
     type FitError = MaxOverflow<Self>;
     type Min = UnboundedCap;
     type Max = Self;
@@ -35,7 +35,7 @@ impl Capacity for MaxCapVal {
         size <= self.0
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

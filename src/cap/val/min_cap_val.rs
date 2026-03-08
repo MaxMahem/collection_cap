@@ -13,7 +13,7 @@ use crate::{Capacity, IterExt};
 pub struct MinCapVal(pub usize);
 
 impl Capacity for MinCapVal {
-    type CapError = MaxUnderflow<Self>;
+    type CompatError = MaxUnderflow<Self>;
     type FitError = MinUnderflow<Self>;
     type Min = Self;
     type Max = UnboundedCap;
@@ -30,7 +30,7 @@ impl Capacity for MinCapVal {
         size >= self.0
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {

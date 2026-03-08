@@ -23,7 +23,7 @@ impl<const MIN: usize> StaticMinCap<MIN> {
 }
 
 impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
-    type CapError = MaxUnderflow<Self>;
+    type CompatError = MaxUnderflow<Self>;
     type FitError = MinUnderflow<Self>;
     type Min = Self;
     type Max = UnboundedCap;
@@ -40,7 +40,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         size >= MIN
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CapError>
+    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
     where
         I: Iterator + ?Sized,
     {
