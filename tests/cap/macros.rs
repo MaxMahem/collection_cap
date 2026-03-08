@@ -24,37 +24,37 @@ macro_rules! caps {
     };
 }
 
-macro_rules! check_compat {
+macro_rules! check_intersects {
     ($cap:expr => { overflow: $over_res:expr, underflow: $under_res:expr }) => {
-        mod check_compat {
+        mod check_intersects {
             use super::*;
             use collection_cap::Capacity;
             use crate::common::consts::iter::*;
 
-            crate::common::check_eq!(compatible: $cap.check_compatibility(&COMPAT_ITER) => Ok(()));
-            crate::common::check_eq!(overflow: $cap.check_compatibility(&OVER_ITER) => $over_res);
-            crate::common::check_eq!(underflow: $cap.check_compatibility(&UNDER_ITER) => $under_res);
+            crate::common::check_eq!(intersecting: $cap.check_intersects(&INTERSECT_ITER) => Ok(()));
+            crate::common::check_eq!(overflow: $cap.check_intersects(&OVER_ITER) => $over_res);
+            crate::common::check_eq!(underflow: $cap.check_intersects(&UNDER_ITER) => $under_res);
 
-            crate::common::panics!(bad_iter: $cap.check_compatibility(&INVALID_ITER) => "Invalid size hint");
+            crate::common::panics!(bad_iter: $cap.check_intersects(&INVALID_ITER) => "Invalid size hint");
         }
     };
 }
 
-macro_rules! check_fit {
+macro_rules! check_overlaps {
     ($cap:expr => { underflow: $under_res:expr, overflow: $over_res:expr, unbounded: $unbounded_res:expr, both: $both_res:expr }) => {
-        mod check_fit {
+        mod check_overlaps {
             use super::*;
             use collection_cap::Capacity;
             use crate::common::consts::iter::*;
 
-            crate::common::check_eq!(compatible: $cap.check_fit(&COMPAT_ITER) => Ok(()));
-            crate::common::check_eq!(underflow: $cap.check_fit(&UNDER_ITER) => $under_res);
-            crate::common::check_eq!(overflow: $cap.check_fit(&OVER_ITER) => $over_res);
-            crate::common::check_eq!(overflow_unbounded: $cap.check_fit(&OVER_ITER_UNBOUNDED)
+            crate::common::check_eq!(intersecting: $cap.check_overlaps(&INTERSECT_ITER) => Ok(()));
+            crate::common::check_eq!(underflow: $cap.check_overlaps(&UNDER_ITER) => $under_res);
+            crate::common::check_eq!(overflow: $cap.check_overlaps(&OVER_ITER) => $over_res);
+            crate::common::check_eq!(overflow_unbounded: $cap.check_overlaps(&OVER_ITER_UNBOUNDED)
                 => $unbounded_res);
-            crate::common::check_eq!(both: $cap.check_fit(&BOTH_ITER) => $both_res);
+            crate::common::check_eq!(both: $cap.check_overlaps(&BOTH_ITER) => $both_res);
 
-            crate::common::panics!(bad_iter: $cap.check_fit(&INVALID_ITER) => "Invalid size hint");
+            crate::common::panics!(bad_iter: $cap.check_overlaps(&INVALID_ITER) => "Invalid size hint");
         }
     };
 }
@@ -72,7 +72,7 @@ macro_rules! range_bounds {
 }
 
 pub(crate) use caps;
-pub(crate) use check_compat;
-pub(crate) use check_fit;
+pub(crate) use check_intersects;
+pub(crate) use check_overlaps;
 pub(crate) use contains_size;
 pub(crate) use range_bounds;

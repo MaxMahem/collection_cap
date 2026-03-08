@@ -1,5 +1,5 @@
-use collection_cap::cap::{MaxCapVal, StaticMaxCap};
-use collection_cap::{StaticCap, VariableCap};
+use collection_cap::cap::{ConstMaxCap, MaxCapVal};
+use collection_cap::{ConstCap, VariableCap};
 
 use crate::common::check_eq;
 use crate::common::consts::*;
@@ -11,7 +11,7 @@ type TestArrayVec = ArrayVec<i32, CAP>;
 const MAX_CAP_VAL: MaxCapVal = MaxCapVal(CAP);
 
 check_eq!(variable_capacity_empty: VariableCap::capacity(&TestArrayVec::new()) => MAX_CAP_VAL);
-check_eq!(static_capacity: TestArrayVec::CAP => StaticMaxCap::<CAP>);
+check_eq!(static_capacity: TestArrayVec::CAP => ConstMaxCap::<CAP>);
 
 #[test]
 fn variable_capacity_decreases() {

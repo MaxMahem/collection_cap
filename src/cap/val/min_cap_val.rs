@@ -8,13 +8,13 @@ use crate::err::{MaxUnderflow, MinUnderflow};
 use crate::internal::Ok;
 use crate::{Capacity, IterExt};
 
-/// A runtime constraint specifying a minimum capacity.
+/// A runtime constraint specifying a minimum [`Capacity`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into)]
 pub struct MinCapVal(pub usize);
 
 impl Capacity for MinCapVal {
-    type CompatError = MaxUnderflow<Self>;
-    type FitError = MinUnderflow<Self>;
+    type IntersectError = MaxUnderflow<Self>;
+    type OverlapError = MinUnderflow<Self>;
     type Min = Self;
     type Max = UnboundedCap;
 
@@ -30,7 +30,7 @@ impl Capacity for MinCapVal {
         size >= self.0
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
+    fn check_intersects<I>(&self, iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
@@ -41,7 +41,7 @@ impl Capacity for MinCapVal {
         }
     }
 
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    fn check_overlaps<I>(&self, iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {

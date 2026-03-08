@@ -1,22 +1,22 @@
-use crate::cap::{MaxCapVal, MinCapVal, StaticMaxCap, StaticMinCap};
+use crate::cap::{ConstMaxCap, ConstMinCap, MaxCapVal, MinCapVal};
 
-/// A [`CompatError`] indicating that a fully consumed [`Iterator`] produces
-/// fewer elements than the minimum required by a [`Capacity`] constraint.
+/// An [`IntersectError`] indicating that a fully consumed [`Iterator`] produces
+/// fewer elements than the minimum required by the [`Capacity`] constraint, `CAP`.
 ///
 /// This occurs when the maximum possible number of elements the iterator could
 /// produce is less than the minimum of the constraint.
 ///
-/// See [`Capacity#note-on-compatibility`] for more details.
+/// See [`Capacity#note-on-intersection`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `CAP`: The type of the min capacity constraint.
+/// - `CAP`: The type of the min [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("Capacity underflow: max iterator size {max_size} < {min_cap:?}")]
 pub struct MaxUnderflow<CAP = MinCapVal> {
     /// The maximum number of elements produced.
     max_size: usize,
-    /// The minimum capacity of the collection.
+    /// The minimum [`Capacity`] of the collection.
     min_cap: CAP,
 }
 
@@ -33,7 +33,7 @@ impl<CAP> MaxUnderflow<CAP> {
         self.max_size
     }
 
-    /// The violated min capacity constraint.
+    /// The violated min [`Capacity`] constraint.
     pub const fn min_cap(&self) -> &CAP {
         &self.min_cap
     }
@@ -45,7 +45,7 @@ impl MaxUnderflow<MinCapVal> {
     /// # Arguments
     ///
     /// - `max_size`: The maximum number of elements produced.
-    /// - `min_cap`: The minimum capacity required.
+    /// - `min_cap`: The minimum [`Capacity`] required.
     ///
     /// # Panics
     ///
@@ -59,8 +59,9 @@ impl MaxUnderflow<MinCapVal> {
     }
 }
 
-impl<const MIN: usize> MaxUnderflow<StaticMinCap<MIN>> {
-    /// Creates a new [`MaxUnderflow`] for a static minimum capacity.
+impl<const MIN: usize> MaxUnderflow<ConstMinCap<MIN>> {
+    /// Creates a new [`MaxUnderflow`] error based on `max_size` for a `const`
+    /// minimum [`Capacity`].
     ///
     /// # Arguments
     ///
@@ -72,29 +73,30 @@ impl<const MIN: usize> MaxUnderflow<StaticMinCap<MIN>> {
     #[must_use]
     pub const fn new(max_size: usize) -> Self {
         match max_size < MIN {
-            true => Self::from_parts(max_size, StaticMinCap),
+            true => Self::from_parts(max_size, ConstMinCap),
             false => panic!("max_size must be < MIN"),
         }
     }
 }
 
-/// A [`CompatError`] indicating that a fully consumed [`Iterator`] produces
-/// more elements than the maximum allowed by a [`Capacity`] constraint.
+/// An [`IntersectError`] indicating that a fully consumed [`Iterator`] produces
+/// more elements than the maximum allowed by the [`Capacity`] constraint,
+/// `CAP`.
 ///
 /// This occurs when the minimum possible number of elements the iterator will
-/// produce is greater than the maximum capacity.
+/// produce is greater than the maximum [`Capacity`].
 ///
-/// See [`Capacity#note-on-compatibility`] for more details.
+/// See [`Capacity#note-on-intersection`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `CAP`: The type of the max capacity constraint.
+/// - `CAP`: The type of the max [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("Capacity overflow: min iterator size {min_size} > {max_cap:?}")]
 pub struct MinOverflow<CAP> {
     /// The minimum number of elements produced.
     min_size: usize,
-    /// The maximum capacity of the collection.
+    /// The maximum [`Capacity`] of the collection.
     max_cap: CAP,
 }
 
@@ -111,7 +113,7 @@ impl<CAP> MinOverflow<CAP> {
         self.min_size
     }
 
-    /// The violated max capacity constraint.
+    /// The violated max [`Capacity`] constraint.
     pub const fn max_cap(&self) -> &CAP {
         &self.max_cap
     }
@@ -123,7 +125,7 @@ impl MinOverflow<MaxCapVal> {
     /// # Arguments
     ///
     /// - `min_size`: The minimum number of elements the [`Iterator`] will produce.
-    /// - `max_cap`: The maximum capacity constraint.
+    /// - `max_cap`: The maximum [`Capacity`] constraint.
     ///
     /// # Panics
     ///
@@ -137,8 +139,9 @@ impl MinOverflow<MaxCapVal> {
     }
 }
 
-impl<const MAX: usize> MinOverflow<StaticMaxCap<MAX>> {
-    /// Creates a new [`MinOverflow`] for a static maximum capacity.
+impl<const MAX: usize> MinOverflow<ConstMaxCap<MAX>> {
+    /// Creates a new [`MinOverflow`] based on `min_size` for a `const` maximum
+    /// size [`Capacity`].
     ///
     /// # Arguments
     ///
@@ -150,26 +153,27 @@ impl<const MAX: usize> MinOverflow<StaticMaxCap<MAX>> {
     #[must_use]
     pub const fn new(min_size: usize) -> Self {
         match min_size > MAX {
-            true => Self::from_parts(min_size, StaticMaxCap),
+            true => Self::from_parts(min_size, ConstMaxCap),
             false => panic!("min_size must be > MAX"),
         }
     }
 }
 
-/// A violation of a [`Capacity`] constraint.
+/// An intersection violation of a [`Capacity`] constraint.
 ///
-/// This indicates that a fully consumed [`Iterator`] is not compatible with a
-/// [`Capacity`] constraint, either because the fully consumed iterator will produce
-/// too many or too few elements.
+/// This indicates that a fully consumed [`Iterator`] does not intersect a
+/// [`Capacity`] constraint, either because the fully consumed iterator will
+/// produce too many or too few elements. This indicates it cannot fufill the
+/// constraint requirements.
 ///
-/// See [`Capacity#note-on-compatibility`] for more details.
+/// See [`Capacity#note-on-intersection`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `MIN`: The type of the minimum capacity constraint.
-/// - `MAX`: The type of the maximum capacity constraint.
+/// - `MIN`: The type of the minimum [`Capacity`] constraint.
+/// - `MAX`: The type of the maximum [`Capacity`] constraint.
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]
-pub enum CompatError<MIN, MAX> {
+pub enum IntersectError<MIN, MAX> {
     /// The minimum number of elements the iterator will produce is greater
     /// than the maximum number of elements that the capacity allows.
     #[error(transparent)]

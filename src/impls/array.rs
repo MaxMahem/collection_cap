@@ -1,8 +1,8 @@
-use crate::StaticCap;
-use crate::cap::StaticExactCap;
+use crate::ConstCap;
+use crate::cap::ConstExactCap;
 
-impl<const N: usize, T> StaticCap for [T; N] {
-    type Cap = StaticExactCap<N>;
+impl<const N: usize, T> ConstCap for [T; N] {
+    type Cap = ConstExactCap<N>;
 
-    const CAP: Self::Cap = StaticExactCap {};
+    const CAP: Self::Cap = ConstExactCap {};
 }

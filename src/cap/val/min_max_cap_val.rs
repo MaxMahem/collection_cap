@@ -4,23 +4,23 @@ use derive_more::{From, Into};
 use fluent_result::into::{IntoOption, IntoResult};
 
 use crate::cap::val::{ExactCapVal, MaxCapVal, MinCapVal};
-use crate::err::{CompatError, MaxUnderflow, MinOverflow};
 use crate::err::{EmptyRange, FromRangeError, InvalidRange};
-use crate::err::{FitError, FitErrorSpan, MaxOverflow, MinUnderflow};
+use crate::err::{IntersectError, MaxUnderflow, MinOverflow};
+use crate::err::{MaxOverflow, MinUnderflow, OverlapError, OverlapErrorSpan};
 use crate::internal::Ok;
 use crate::{Capacity, IterExt};
 
-/// A runtime constraint specifying both a minimum and maximum capacity.
+/// A variable [`Capacity`] constraint specifying both a minimum and maximum [`Capacity`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Into, From)]
 pub struct MinMaxCapVal {
-    /// The minimum capacity required.
+    /// The minimum [`Capacity`] required.
     min: MinCapVal,
-    /// The maximum capacity allowed.
+    /// The maximum [`Capacity`] allowed.
     max: MaxCapVal,
 }
 
 impl MinMaxCapVal {
-    /// A capacity constraint requiring exactly zero elements.
+    /// A [`Capacity`] constraint requiring exactly zero elements.
     pub const ZERO: Self = Self::new(0, 0);
 
     /// Internal unchecked constructor.
@@ -33,8 +33,8 @@ impl MinMaxCapVal {
     ///
     /// # Arguments
     ///
-    /// - `min`: The inclusive minimum capacity required.
-    /// - `max`: The inclusive maximum capacity allowed.
+    /// - `min`: The inclusive minimum [`Capacity`] required.
+    /// - `max`: The inclusive maximum [`Capacity`] allowed.
     ///
     /// # Panics
     ///
@@ -47,13 +47,13 @@ impl MinMaxCapVal {
         }
     }
 
-    /// Returns the minimum capacity required.
+    /// Returns the minimum [`Capacity`] required.
     #[must_use]
     pub const fn min(&self) -> MinCapVal {
         self.min
     }
 
-    /// Returns the maximum capacity allowed.
+    /// Returns the maximum [`Capacity`] allowed.
     #[must_use]
     pub const fn max(&self) -> MaxCapVal {
         self.max
@@ -61,8 +61,8 @@ impl MinMaxCapVal {
 }
 
 impl Capacity for MinMaxCapVal {
-    type CompatError = CompatError<MinCapVal, MaxCapVal>;
-    type FitError = FitError<MinCapVal, MaxCapVal>;
+    type IntersectError = IntersectError<MinCapVal, MaxCapVal>;
+    type OverlapError = OverlapError<MinCapVal, MaxCapVal>;
     type Min = MinCapVal;
     type Max = MaxCapVal;
 
@@ -78,7 +78,7 @@ impl Capacity for MinMaxCapVal {
         self.min.contains_size(size) && self.max.contains_size(size)
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
+    fn check_intersects<I>(&self, iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
@@ -91,7 +91,7 @@ impl Capacity for MinMaxCapVal {
         }
     }
 
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    fn check_overlaps<I>(&self, iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {
@@ -111,7 +111,7 @@ impl Capacity for MinMaxCapVal {
         };
 
         match (underflow, overflow) {
-            (Some(underflow), Some(overflow)) => FitErrorSpan::from_parts(overflow, underflow).into_err()?,
+            (Some(underflow), Some(overflow)) => OverlapErrorSpan::from_parts(overflow, underflow).into_err()?,
             (Some(underflow), None) => Err(underflow)?,
             (None, Some(overflow)) => Err(overflow)?,
             (None, None) => Ok!(),

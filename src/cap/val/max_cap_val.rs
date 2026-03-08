@@ -8,18 +8,18 @@ use crate::err::{EmptyRange, MaxOverflow, MinOverflow};
 use crate::internal::Ok;
 use crate::{Capacity, IterExt};
 
-/// A runtime constraint specifying a maximum capacity.
+/// A runtime constraint specifying a maximum [`Capacity`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone, PartialOrd, Ord, From, Into)]
 pub struct MaxCapVal(pub usize);
 
 impl MaxCapVal {
-    /// A capacity constraint representing a maximum of zero elements.
+    /// A [`Capacity`] constraint representing a maximum of zero elements.
     pub const ZERO: Self = Self(0);
 }
 
 impl Capacity for MaxCapVal {
-    type CompatError = MinOverflow<Self>;
-    type FitError = MaxOverflow<Self>;
+    type IntersectError = MinOverflow<Self>;
+    type OverlapError = MaxOverflow<Self>;
     type Min = UnboundedCap;
     type Max = Self;
 
@@ -35,7 +35,7 @@ impl Capacity for MaxCapVal {
         size <= self.0
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
+    fn check_intersects<I>(&self, iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
@@ -46,7 +46,7 @@ impl Capacity for MaxCapVal {
         }
     }
 
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    fn check_overlaps<I>(&self, iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {

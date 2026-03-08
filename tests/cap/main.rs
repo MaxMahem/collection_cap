@@ -5,6 +5,6 @@ pub(crate) mod macros;
 
 pub(crate) use macros::*;
 
-mod stat;
+mod consts;
 mod unbounded;
 mod val;

@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 
-use crate::cap::{MaxCapVal, StaticMaxCap};
-use crate::{StaticCap, VariableCap};
+use crate::cap::{ConstMaxCap, MaxCapVal};
+use crate::{ConstCap, VariableCap};
 
 impl<T, const N: usize> VariableCap for ArrayVec<T, N> {
     type Cap = MaxCapVal;
@@ -11,8 +11,8 @@ impl<T, const N: usize> VariableCap for ArrayVec<T, N> {
     }
 }
 
-impl<T, const N: usize> StaticCap for ArrayVec<T, N> {
-    type Cap = StaticMaxCap<N>;
+impl<T, const N: usize> ConstCap for ArrayVec<T, N> {
+    type Cap = ConstMaxCap<N>;
 
-    const CAP: Self::Cap = StaticMaxCap {};
+    const CAP: Self::Cap = ConstMaxCap {};
 }

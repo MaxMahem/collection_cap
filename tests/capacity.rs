@@ -16,31 +16,31 @@ const MAX_UNDERFLOW: MaxUnderflow<MinCapVal> = MaxUnderflow::<MinCapVal>::new(UN
 mod variable_cap_ref {
     use super::*;
 
-    check_eq!(compatible: iter::COMPAT_ITER.ensure_compatible_with(&MAX_CAP_VAL) => Ok(()));
-    check_eq!(overflow: iter::OVER_ITER.ensure_compatible_with(&MAX_CAP_VAL) => Err(MIN_OVERFLOW));
-    check_eq!(underflow: iter::UNDER_ITER.ensure_compatible_with(&MIN_CAP_VAL) => Err(MAX_UNDERFLOW));
+    check_eq!(intersecting: iter::INTERSECT_ITER.ensure_intersects_with(&MAX_CAP_VAL) => Ok(()));
+    check_eq!(overflow: iter::OVER_ITER.ensure_intersects_with(&MAX_CAP_VAL) => Err(MIN_OVERFLOW));
+    check_eq!(underflow: iter::UNDER_ITER.ensure_intersects_with(&MIN_CAP_VAL) => Err(MAX_UNDERFLOW));
 
-    panics!(bad_iter: iter::INVALID_ITER.ensure_compatible_with(&MAX_CAP_VAL) => "Invalid size hint");
+    panics!(bad_iter: iter::INVALID_ITER.ensure_intersects_with(&MAX_CAP_VAL) => "Invalid size hint");
 }
 
 mod variable_cap_mut_ref {
     use super::*;
 
-    check_eq!(compatible: {
+    check_eq!(intersecting: {
         let mut cap = MAX_CAP_VAL;
-        iter::COMPAT_ITER.ensure_compatible_with(&mut cap)
+        iter::INTERSECT_ITER.ensure_intersects_with(&mut cap)
     } => Ok(()));
     check_eq!(overflow: {
         let mut cap = MAX_CAP_VAL;
-        iter::OVER_ITER.ensure_compatible_with(&mut cap)
+        iter::OVER_ITER.ensure_intersects_with(&mut cap)
     } => Err(MIN_OVERFLOW));
     check_eq!(underflow: {
         let mut cap = MIN_CAP_VAL;
-        iter::UNDER_ITER.ensure_compatible_with(&mut cap)
+        iter::UNDER_ITER.ensure_intersects_with(&mut cap)
     } => Err(MAX_UNDERFLOW));
 
     panics!(bad_iter: {
         let mut cap = MAX_CAP_VAL;
-        iter::INVALID_ITER.ensure_compatible_with(&mut cap)
+        iter::INVALID_ITER.ensure_intersects_with(&mut cap)
     } => "Invalid size hint");
 }

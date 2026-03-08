@@ -6,25 +6,25 @@ use fluent_result::into::IntoResult;
 use crate::cap::{MinCapVal, UnboundedCap};
 use crate::err::{MaxUnderflow, MinUnderflow};
 use crate::internal::{Ok, Sealed};
-use crate::{Capacity, IterExt, StaticCap};
+use crate::{Capacity, ConstCap, IterExt};
 
-/// A static minimum capacity constraint.
+/// A `const` minimum [`Capacity`] constraint.
 ///
 /// # Type Parameters
 ///
-/// * `MIN`: The inclusive minimum size of the constraint.
+/// * `MIN`: The inclusive minimum size of the [`Capacity`] constraint.
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
-#[debug("StaticMinCap<{MIN}>")]
-pub struct StaticMinCap<const MIN: usize>;
+#[debug("ConstMinCap<{MIN}>")]
+pub struct ConstMinCap<const MIN: usize>;
 
-impl<const MIN: usize> StaticMinCap<MIN> {
+impl<const MIN: usize> ConstMinCap<MIN> {
     /// The equivalent range.
     pub const RANGE: RangeFrom<usize> = MIN..;
 }
 
-impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
-    type CompatError = MaxUnderflow<Self>;
-    type FitError = MinUnderflow<Self>;
+impl<const MIN: usize> Capacity for ConstMinCap<MIN> {
+    type IntersectError = MaxUnderflow<Self>;
+    type OverlapError = MinUnderflow<Self>;
     type Min = Self;
     type Max = UnboundedCap;
 
@@ -40,7 +40,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         size >= MIN
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
+    fn check_intersects<I>(&self, iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
@@ -51,7 +51,7 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
         }
     }
 
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    fn check_overlaps<I>(&self, iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {
@@ -63,13 +63,13 @@ impl<const MIN: usize> Capacity for StaticMinCap<MIN> {
     }
 }
 
-impl<const MIN: usize> StaticCap for StaticMinCap<MIN> {
+impl<const MIN: usize> ConstCap for ConstMinCap<MIN> {
     type Cap = Self;
 
     const CAP: Self::Cap = Self;
 }
 
-impl<const MIN: usize> RangeBounds<usize> for StaticMinCap<MIN> {
+impl<const MIN: usize> RangeBounds<usize> for ConstMinCap<MIN> {
     fn start_bound(&self) -> Bound<&usize> {
         Bound::Included(&MIN)
     }
@@ -79,16 +79,16 @@ impl<const MIN: usize> RangeBounds<usize> for StaticMinCap<MIN> {
     }
 }
 
-impl<const MIN: usize> From<StaticMinCap<MIN>> for MinCapVal {
-    fn from(_value: StaticMinCap<MIN>) -> Self {
+impl<const MIN: usize> From<ConstMinCap<MIN>> for MinCapVal {
+    fn from(_value: ConstMinCap<MIN>) -> Self {
         Self(MIN)
     }
 }
 
-impl<const MIN: usize> From<StaticMinCap<MIN>> for RangeFrom<usize> {
-    fn from(_value: StaticMinCap<MIN>) -> Self {
+impl<const MIN: usize> From<ConstMinCap<MIN>> for RangeFrom<usize> {
+    fn from(_value: ConstMinCap<MIN>) -> Self {
         MIN..
     }
 }
 
-impl<const MIN: usize> Sealed for StaticMinCap<MIN> {}
+impl<const MIN: usize> Sealed for ConstMinCap<MIN> {}

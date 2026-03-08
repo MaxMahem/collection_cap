@@ -1,7 +1,7 @@
-mod stat;
+mod consts;
 mod unbounded;
 mod val;
 
-pub use stat::*;
+pub use consts::*;
 pub use unbounded::*;
 pub use val::*;

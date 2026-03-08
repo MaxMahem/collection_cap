@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
+pub use collection_cap::cap::{ConstExactCap, ConstMaxCap, ConstMinCap, ConstMinMaxCap};
 pub use collection_cap::cap::{ExactCapVal, MaxCapVal, MinCapVal, MinMaxCapVal, UnboundedCap};
-pub use collection_cap::cap::{StaticExactCap, StaticMaxCap, StaticMinCap, StaticMinMaxCap};
 pub use collection_cap::err::{
-    CompatError, EmptyRange, FitError, FitErrorSpan, FromRangeError, InvalidRange, MaxOverflow, MaxUnderflow,
+    IntersectError, EmptyRange, OverlapError, OverlapErrorSpan, FromRangeError, InvalidRange, MaxOverflow, MaxUnderflow,
     MinOverflow, MinUnderflow, UpperBound,
 };
-pub use collection_cap::{Capacity, VariableCap};
+pub use collection_cap::{Capacity, ConstCap, VariableCap};
 
 use std::ops::{Range, RangeFrom, RangeInclusive};
 
@@ -20,7 +20,7 @@ pub mod iter {
     use super::*;
     use size_hinter::{InvalidIterator, TestIterator};
 
-    pub const COMPAT_ITER: Range<i32> = 0..(CAP as i32);
+    pub const INTERSECT_ITER: Range<i32> = 0..(CAP as i32);
     pub const OVER_ITER: Range<i32> = 0..(OVER_CAP as i32);
     pub const OVER_ITER_UNBOUNDED: RangeFrom<i32> = 0..;
     pub const UNDER_ITER: Range<i32> = 0..(UNDER_CAP as i32);

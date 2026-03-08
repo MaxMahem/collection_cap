@@ -1,9 +1,9 @@
 mod bound;
-mod compat;
-mod fit;
+mod intersect;
+mod overlap;
 mod range;
 
 pub use bound::*;
-pub use compat::*;
-pub use fit::*;
+pub use intersect::*;
+pub use overlap::*;
 pub use range::*;

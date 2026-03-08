@@ -6,25 +6,25 @@ use fluent_result::into::IntoResult;
 use crate::cap::{MaxCapVal, UnboundedCap};
 use crate::err::{MaxOverflow, MinOverflow};
 use crate::internal::{Ok, Sealed};
-use crate::{Capacity, IterExt, StaticCap};
+use crate::{Capacity, ConstCap, IterExt};
 
-/// A static maximum capacity constraint.
+/// A `const` maximum [`Capacity`] constraint.
 ///
 /// # Type Parameters
 ///
-/// * `MAX`: The inclusive maximum size of the constraint.
+/// * `MAX`: The inclusive maximum size of the [`Capacity`] constraint.
 #[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
-#[debug("StaticMaxCap<{MAX}>")]
-pub struct StaticMaxCap<const MAX: usize>;
+#[debug("ConstMaxCap<{MAX}>")]
+pub struct ConstMaxCap<const MAX: usize>;
 
-impl<const MAX: usize> StaticMaxCap<MAX> {
+impl<const MAX: usize> ConstMaxCap<MAX> {
     /// The equivalent range.
     pub const RANGE: RangeToInclusive<usize> = ..=MAX;
 }
 
-impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
-    type CompatError = MinOverflow<Self>;
-    type FitError = MaxOverflow<Self>;
+impl<const MAX: usize> Capacity for ConstMaxCap<MAX> {
+    type IntersectError = MinOverflow<Self>;
+    type OverlapError = MaxOverflow<Self>;
     type Min = UnboundedCap;
     type Max = Self;
 
@@ -40,7 +40,7 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         size <= MAX
     }
 
-    fn check_compatibility<I>(&self, iter: &I) -> Result<(), Self::CompatError>
+    fn check_intersects<I>(&self, iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
@@ -51,7 +51,7 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
         }
     }
 
-    fn check_fit<I>(&self, iter: &I) -> Result<(), Self::FitError>
+    fn check_overlaps<I>(&self, iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {
@@ -64,13 +64,13 @@ impl<const MAX: usize> Capacity for StaticMaxCap<MAX> {
     }
 }
 
-impl<const MAX: usize> StaticCap for StaticMaxCap<MAX> {
+impl<const MAX: usize> ConstCap for ConstMaxCap<MAX> {
     type Cap = Self;
 
     const CAP: Self::Cap = Self;
 }
 
-impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
+impl<const MAX: usize> RangeBounds<usize> for ConstMaxCap<MAX> {
     fn start_bound(&self) -> Bound<&usize> {
         Bound::Unbounded
     }
@@ -80,16 +80,16 @@ impl<const MAX: usize> RangeBounds<usize> for StaticMaxCap<MAX> {
     }
 }
 
-impl<const MAX: usize> From<StaticMaxCap<MAX>> for MaxCapVal {
-    fn from(_value: StaticMaxCap<MAX>) -> Self {
+impl<const MAX: usize> From<ConstMaxCap<MAX>> for MaxCapVal {
+    fn from(_value: ConstMaxCap<MAX>) -> Self {
         Self(MAX)
     }
 }
 
-impl<const MAX: usize> From<StaticMaxCap<MAX>> for RangeToInclusive<usize> {
-    fn from(_value: StaticMaxCap<MAX>) -> Self {
+impl<const MAX: usize> From<ConstMaxCap<MAX>> for RangeToInclusive<usize> {
+    fn from(_value: ConstMaxCap<MAX>) -> Self {
         ..=MAX
     }
 }
 
-impl<const MAX: usize> Sealed for StaticMaxCap<MAX> {}
+impl<const MAX: usize> Sealed for ConstMaxCap<MAX> {}

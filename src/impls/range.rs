@@ -76,7 +76,7 @@ pub mod range_inclusive {
 
 pub mod range_full {
     use crate::cap::UnboundedCap;
-    use crate::{StaticCap, VariableCap};
+    use crate::{ConstCap, VariableCap};
     use core::ops::RangeFull;
 
     impl VariableCap for RangeFull {
@@ -88,7 +88,7 @@ pub mod range_full {
         }
     }
 
-    impl StaticCap for RangeFull {
+    impl ConstCap for RangeFull {
         type Cap = UnboundedCap;
         const CAP: UnboundedCap = UnboundedCap;
     }

@@ -22,7 +22,7 @@ impl InvalidRange {
         Self { start, end }
     }
 
-    /// Creates a new [`InvalidRange`] error.
+    /// Creates a new [`InvalidRange`] error from `start` and `end`.
     ///
     /// # Arguments
     ///

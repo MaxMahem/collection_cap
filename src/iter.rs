@@ -5,7 +5,7 @@ pub trait IterExt {
     /// The error message to use when the size hint is invalid.
     const INVALID_SIZE_HINT_MSG: &'static str = "Invalid size hint";
 
-    /// Returns a valid size hint of the iterator.
+    /// Returns a valid size hint of the [`Iterator`].
     ///
     /// # Panics
     ///

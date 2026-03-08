@@ -3,6 +3,6 @@ mod common;
 
 mod bound;
 
-mod compat;
-mod fit;
+mod intersect;
+mod overlap;
 mod range;

@@ -16,18 +16,18 @@ check_eq!(capacity: UnboundedCap.capacity() => UnboundedCap);
 mod check_compatibility {
     use super::*;
 
-    check_eq!(compatible: UnboundedCap.check_compatibility(&COMPAT_ITER) => Ok(()));
-    check_eq!(overflow: UnboundedCap.check_compatibility(&OVER_ITER) => Ok(()));
-    check_eq!(underflow: UnboundedCap.check_compatibility(&UNDER_ITER) => Ok(()));
+    check_eq!(intersecting: UnboundedCap.check_intersects(&INTERSECT_ITER) => Ok(()));
+    check_eq!(overflow: UnboundedCap.check_intersects(&OVER_ITER) => Ok(()));
+    check_eq!(underflow: UnboundedCap.check_intersects(&UNDER_ITER) => Ok(()));
 }
 
 mod check_fit {
     use super::*;
 
-    check_eq!(fit: UnboundedCap.check_fit(&COMPAT_ITER) => Ok(()));
-    check_eq!(underflow: UnboundedCap.check_fit(&UNDER_ITER) => Ok(()));
-    check_eq!(overflow: UnboundedCap.check_fit(&OVER_ITER) => Ok(()));
-    check_eq!(overflow_unbounded: UnboundedCap.check_fit(&OVER_ITER_UNBOUNDED) => Ok(()));
+    check_eq!(overlap: UnboundedCap.check_overlaps(&INTERSECT_ITER) => Ok(()));
+    check_eq!(overlap_underflow: UnboundedCap.check_overlaps(&UNDER_ITER) => Ok(()));
+    check_eq!(overlap_overflow: UnboundedCap.check_overlaps(&OVER_ITER) => Ok(()));
+    check_eq!(overlap_both: UnboundedCap.check_overlaps(&BOTH_ITER) => Ok(()));
 }
 
 range_bounds!(UnboundedCap => { start: Bound::Unbounded, end: Bound::Unbounded });

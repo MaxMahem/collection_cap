@@ -3,19 +3,19 @@ use core::ops::{Bound, RangeBounds};
 use derive_more::{Display, From, Into};
 
 use crate::internal::{Ok, Sealed};
-use crate::{Capacity, StaticCap};
+use crate::{Capacity, ConstCap};
 
-/// A runtime constraint specifying an unbounded capacity.
+/// A runtime constraint specifying an unbounded [`Capacity`].
 ///
-/// This constraint is compatible with any iterator.
+/// This constraint intersects with any [`Iterator`].
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Copy, Clone, From, Into, Display)]
 pub struct UnboundedCap;
 
 impl Sealed for UnboundedCap {}
 
 impl Capacity for UnboundedCap {
-    type CompatError = Infallible;
-    type FitError = Infallible;
+    type IntersectError = Infallible;
+    type OverlapError = Infallible;
     type Min = Self;
     type Max = Self;
 
@@ -27,24 +27,24 @@ impl Capacity for UnboundedCap {
         *self
     }
 
-    /// Always returns `true` as an unbounded capacity constraint is
-    /// compatible with any size.
+    /// Always returns `true` as an unbounded [`Capacity`] constraint is
+    /// intersecting with any size.
     fn contains_size(&self, _size: usize) -> bool {
         true
     }
 
-    /// Always returns `Ok(())` as an unbounded capacity constraint is
-    /// compatible with any iterator.
-    fn check_compatibility<I>(&self, _iter: &I) -> Result<(), Self::CompatError>
+    /// Always returns `Ok(())` as an unbounded [`Capacity`] constraint is
+    /// intersecting with any [`Iterator`].
+    fn check_intersects<I>(&self, _iter: &I) -> Result<(), Self::IntersectError>
     where
         I: Iterator + ?Sized,
     {
         Ok!()
     }
 
-    /// Always returns `Ok(())` as an unbounded capacity constraint fits
-    /// any iterator.
-    fn check_fit<I>(&self, _iter: &I) -> Result<(), Self::FitError>
+    /// Always returns `Ok(())` as an unbounded [`Capacity`] constraint overlaps
+    /// any [`Iterator`].
+    fn check_overlaps<I>(&self, _iter: &I) -> Result<(), Self::OverlapError>
     where
         I: Iterator + ?Sized,
     {
@@ -54,7 +54,7 @@ impl Capacity for UnboundedCap {
 
 crate::cap::val::impl_variable_cap_from_self!(UnboundedCap);
 
-impl StaticCap for UnboundedCap {
+impl ConstCap for UnboundedCap {
     type Cap = Self;
 
     const CAP: Self::Cap = Self;

@@ -1,23 +1,23 @@
-use crate::cap::{MaxCapVal, MinCapVal, StaticMaxCap, StaticMinCap};
+use crate::cap::{ConstMaxCap, ConstMinCap, MaxCapVal, MinCapVal};
 use crate::err::UpperBound;
 
-/// A [`FitError`] indicating that an [`Iterator`]'s minimum size is
-/// below the minimum capacity required.
+/// An [`OverlapError`] indicating that an [`Iterator`]'s minimum size is
+/// below the minimum required by the [`Capacity`] constraint, `CAP`.
 ///
 /// This occurs when the minimum possible number of elements the iterator will
 /// produce is less than the minimum of the constraint.
 ///
-/// See [`Capacity#note-on-fit`] for more details.
+/// See [`Capacity#note-on-overlap`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `CAP`: The type of the minimum capacity constraint.
+/// - `CAP`: The type of the minimum [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("Iterator can underflow capacity: min iterator size {min_size} < {min_cap:?}")]
 pub struct MinUnderflow<CAP> {
     /// The minimum number of elements the iterator will produce.
     min_size: usize,
-    /// The violated minimum capacity constraint.
+    /// The violated minimum [`Capacity`] constraint.
     min_cap: CAP,
 }
 
@@ -34,19 +34,19 @@ impl<CAP> MinUnderflow<CAP> {
         self.min_size
     }
 
-    /// The violated minimum capacity constraint.
+    /// The violated minimum [`Capacity`] constraint.
     pub const fn min_cap(&self) -> &CAP {
         &self.min_cap
     }
 }
 
 impl MinUnderflow<MinCapVal> {
-    /// Creates a new [`MinUnderflow`].
+    /// Creates a new [`MinUnderflow`] based on `min_size` and `min_cap`.
     ///
     /// # Arguments
     ///
     /// - `min_size`: The iterator's minimum size.
-    /// - `min_cap`: The minimum capacity constraint.
+    /// - `min_cap`: The minimum [`Capacity`] constraint.
     ///
     /// # Panics
     ///
@@ -60,8 +60,8 @@ impl MinUnderflow<MinCapVal> {
     }
 }
 
-impl<const MIN: usize> MinUnderflow<StaticMinCap<MIN>> {
-    /// Creates a new [`MinUnderflow`] for a static minimum capacity.
+impl<const MIN: usize> MinUnderflow<ConstMinCap<MIN>> {
+    /// Creates a new [`MinUnderflow`] based on `min_size` for a `const` minimum [`Capacity`].
     ///
     /// # Arguments
     ///
@@ -73,29 +73,29 @@ impl<const MIN: usize> MinUnderflow<StaticMinCap<MIN>> {
     #[must_use]
     pub const fn new(min_size: usize) -> Self {
         match min_size < MIN {
-            true => Self::from_parts(min_size, StaticMinCap),
+            true => Self::from_parts(min_size, ConstMinCap),
             false => panic!("min_size must be < MIN"),
         }
     }
 }
 
-/// A [`FitError`] indicating that an [`Iterator`]'s maximum size
-/// exceeds the maximum capacity.
+/// An [`OverlapError`] indicating that an [`Iterator`]'s maximum size
+/// exceeds the maximum [`Capacity`] constraint, `CAP`.
 ///
 /// This occurs when the maximum possible number of elements the iterator could
-/// produce is greater than the maximum capacity.
+/// produce is greater than the maximum [`Capacity`].
 ///
-/// See [`Capacity#note-on-fit`] for more details.
+/// See [`Capacity#note-on-overlap`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `CAP`: The type of the maximum capacity constraint.
+/// - `CAP`: The type of the maximum [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("Iterator can overflow capacity: max iterator size {max_size} > {max_cap:?}")]
 pub struct MaxOverflow<CAP> {
     /// The maximum number of elements the iterator could produce.
     max_size: UpperBound,
-    /// The violated maximum capacity constraint.
+    /// The violated maximum [`Capacity`] constraint.
     max_cap: CAP,
 }
 
@@ -110,7 +110,7 @@ impl<CAP> MaxOverflow<CAP> {
     ///
     /// # Arguments
     ///
-    /// - `max_cap`: The maximum capacity constraint.
+    /// - `max_cap`: The maximum [`Capacity`] constraint.
     #[must_use]
     pub const fn unbounded(max_cap: CAP) -> Self {
         Self { max_size: UpperBound::Unbounded, max_cap }
@@ -122,7 +122,7 @@ impl<CAP> MaxOverflow<CAP> {
         self.max_size
     }
 
-    /// The violated maximum capacity constraint.
+    /// The violated maximum [`Capacity`] constraint.
     pub const fn max_cap(&self) -> &CAP {
         &self.max_cap
     }
@@ -131,12 +131,12 @@ impl<CAP> MaxOverflow<CAP> {
 impl MaxOverflow<MaxCapVal> {
     /// Creates a new [`MaxOverflow`] based on `max_size` and `max_cap`.
     ///
-    /// For an unbounded iterator, use [`Self::unbounded`] instead.
+    /// For an unbounded [`Iterator`], use [`Self::unbounded`] instead.
     ///
     /// # Arguments
     ///
     /// - `max_size`: The iterator's maximum size.
-    /// - `max_cap`: The maximum capacity constraint.
+    /// - `max_cap`: The maximum [`Capacity`] constraint.
     ///
     /// # Panics
     ///
@@ -150,14 +150,14 @@ impl MaxOverflow<MaxCapVal> {
     }
 }
 
-impl<const MAX: usize> MaxOverflow<StaticMaxCap<MAX>> {
-    /// Creates a new [`MaxOverflow`] for a static maximum capacity where the iterator
+impl<const MAX: usize> MaxOverflow<ConstMaxCap<MAX>> {
+    /// Creates a new [`MaxOverflow`] for a `const` maximum [`Capacity`] where the [`Iterator`]
     /// is unbounded.
-    pub const UNBOUNDED: Self = Self::unbounded(StaticMaxCap);
+    pub const UNBOUNDED: Self = Self::unbounded(ConstMaxCap);
 
-    /// Creates a new [`MaxOverflow`] based on `max_size` for a static maximum capacity.
+    /// Creates a new [`MaxOverflow`] based on `max_size` for a `const` maximum [`Capacity`].
     ///
-    /// For an unbounded iterator, use [`Self::UNBOUNDED`] instead.
+    /// For an unbounded [`Iterator`], use [`Self::UNBOUNDED`] instead.
     ///
     /// # Arguments
     ///
@@ -169,38 +169,38 @@ impl<const MAX: usize> MaxOverflow<StaticMaxCap<MAX>> {
     #[must_use]
     pub const fn fixed(max_size: usize) -> Self {
         match max_size > MAX {
-            true => Self::from_parts_fixed(max_size, StaticMaxCap),
+            true => Self::from_parts_fixed(max_size, ConstMaxCap),
             false => panic!("max_size must be > MAX"),
         }
     }
 }
 
-/// A [`FitError`] indicating that an [`Iterator`]'s size hint range
-/// extends both below the minimum and above the maximum capacity.
+/// An [`OverlapError`] indicating that an [`Iterator`]'s size hint range
+/// extends both below the `MIN` and above the `MAX` [`Capacity`] constraints.
 ///
-/// See [`Capacity#note-on-fit`] for more details.
+/// See [`Capacity#note-on-overlap`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `MIN`: The type of the minimum capacity constraint.
-/// - `MAX`: The type of the maximum capacity constraint.
+/// - `MIN`: The type of the minimum [`Capacity`] constraint.
+/// - `MAX`: The type of the maximum [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("{underflow}; {overflow}")]
-pub struct FitErrorSpan<MIN, MAX> {
+pub struct OverlapErrorSpan<MIN, MAX> {
     /// The underflow portion of the violation.
     underflow: MinUnderflow<MIN>,
     /// The overflow portion of the violation.
     overflow: MaxOverflow<MAX>,
 }
 
-impl<MIN, MAX> FitErrorSpan<MIN, MAX> {
+impl<MIN, MAX> OverlapErrorSpan<MIN, MAX> {
     /// Internal unchecked wrapper without statically verifying traits constraints.
     #[must_use]
     pub(crate) const fn from_parts(overflow: MaxOverflow<MAX>, underflow: MinUnderflow<MIN>) -> Self {
         Self { underflow, overflow }
     }
 
-    /// Creates a new [`FitErrorSpan`] from `overflow` and `underflow`
+    /// Creates a new [`OverlapErrorSpan`] from `overflow` and `underflow`
     ///
     /// # Panics
     ///
@@ -227,28 +227,29 @@ impl<MIN, MAX> FitErrorSpan<MIN, MAX> {
     }
 }
 
-/// A fit violation for a capacity constraint with both a minimum and maximum,
-/// indicating that the iterator's possible range is below the minimum, above
-/// the maximum capacity, or both simultaneously.
+/// An overlap violation of a [`Capacity`] constraint.
 ///
-/// See [`Capacity#note-on-fit`] for more details.
+/// This indicates that the [`Iterator`]'s possible range is below the minimum,
+/// above the maximum capacity, or both simultaneously.
+///
+/// See [`Capacity#note-on-overlap`] for more details.
 ///
 /// # Type Parameters
 ///
-/// - `MIN`: The type of the minimum capacity constraint.
-/// - `MAX`: The type of the maximum capacity constraint.
+/// - `MIN`: The type of the minimum [`Capacity`] constraint.
+/// - `MAX`: The type of the maximum [`Capacity`] constraint.
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
-pub enum FitError<MIN, MAX> {
-    /// The iterator's maximum size exceeds the maximum capacity.
+pub enum OverlapError<MIN, MAX> {
+    /// The [`Iterator`]'s maximum size exceeds the maximum [`Capacity`].
     #[error(transparent)]
     Overflow(#[from] MaxOverflow<MAX>),
 
-    /// The iterator's minimum size is below the minimum capacity.
+    /// The [`Iterator`]'s minimum size is below the minimum [`Capacity`].
     #[error(transparent)]
     Underflow(#[from] MinUnderflow<MIN>),
 
-    /// The iterator's possible range extends below the minimum and above the
-    /// maximum capacity simultaneously.
+    /// The [`Iterator`]'s possible range extends below the minimum and above the
+    /// maximum [`Capacity`] simultaneously.
     #[error(transparent)]
-    Both(#[from] FitErrorSpan<MIN, MAX>),
+    Both(#[from] OverlapErrorSpan<MIN, MAX>),
 }
