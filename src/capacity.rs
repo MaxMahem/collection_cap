@@ -1,4 +1,6 @@
-use core::{error::Error, ops::RangeBounds};
+use core::error::Error;
+use core::fmt::Debug;
+use core::ops::RangeBounds;
 
 use crate::internal::Sealed;
 
@@ -89,7 +91,7 @@ use crate::internal::Sealed;
 /// An [`ExactSizeIterator`] that passes [`Capacity::check_compatibility`] is
 /// guaranteed to fit within the capacity constraints. Likewise, one that fails
 /// [`Capacity::check_fit`] is guaranteed to be incompatible.
-pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + core::fmt::Debug {
+pub trait Capacity: Sealed + RangeBounds<usize> + Copy + Clone + Debug {
     /// The error type returned if an iterator is not compatible with the
     /// capacity constraints.
     type CompatError: Error;
